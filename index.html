@@ -145,6 +145,14 @@ details[open] summary::before{content:'– '}
 .kpi div{background:var(--night);border-radius:10px;padding:12px 10px;text-align:center}
 .kpi b{display:block;font-size:22px;font-weight:700;line-height:1.2}
 .kpi span{color:var(--sage);font-size:11.5px}
+.reco{background:var(--night);border-radius:12px;padding:4px 14px;margin-top:4px}
+.reco .r{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  padding:11px 0;border-top:1px solid var(--line)}
+.reco .r:first-child{border-top:0}
+.reco .k{color:var(--sage);font-size:12.5px;flex:0 0 auto}
+.reco .v{font-weight:600;text-align:right;min-width:0}
+.reco .v em{font-style:normal;color:var(--sodium)}
+.reco .v small{display:block;color:var(--sage);font-weight:400;font-size:12px}
 @media (prefers-reduced-motion:no-preference){
   td.pop{animation:pop .28s ease-out backwards}
   @keyframes pop{from{opacity:0;transform:scale(.82)}}
@@ -180,6 +188,10 @@ details[open] summary::before{content:'– '}
       <hr class="rule">
       <h2>Scores les plus probables</h2>
       <div class="scores" id="topScores"></div>
+      <hr class="rule">
+      <h2>Pronostic recommandé</h2>
+      <div class="reco" id="reco"></div>
+      <p class="note" id="recoNote" style="margin-top:10px"></p>
       <details>
         <summary>Changer d'affiche</summary>
         <div style="display:grid;gap:8px;margin-top:10px">
@@ -484,7 +496,7 @@ async function backtest(matches,opts={},onProg){
    STOCKAGE LOCAL
    ============================================================ */
 const K={res:'prono.res',fix:'prono.fix',team:'prono.team',meta:'prono.meta',
-         preds:'prono.preds',cfg:'prono.cfg'};
+         preds:'prono.preds',cfg:'prono.cfg',sc:'prono.sc'};
 let STORAGE_OK=true;
 const store={
   get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(_){ return d; } },
@@ -512,7 +524,8 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const iso=d=>new Date(d).toISOString().slice(0,10);
 
 const state={results:[],fixtures:[],teams:new Map(),preds:{},model:null,
-             sel:null,loading:false,view:'vMatches',cfg:{}};
+             sel:null,loading:false,view:'vMatches',cfg:{},
+             scRaw:{},scorersOk:null,avg:new Map()};
 
 /* ============================================================
    CHARGEMENT / SAUVEGARDE
@@ -523,11 +536,14 @@ function loadLocal(){
   state.fixtures=(store.get(K.fix,[])||[]).map(a=>({t:a[0],home:a[1],away:a[2],c:a[3]}));
   state.teams=new Map(Object.entries(store.get(K.team,{})));
   state.preds=store.get(K.preds,{})||{};
+  state.scRaw=store.get(K.sc,{})||{};
+  if(Object.keys(state.scRaw).length) state.scorersOk=true;
 }
 function saveData(){
   store.set(K.res,state.results.map(m=>[m.t,m.home,m.away,m.hg,m.ag,m.c]));
   store.set(K.fix,state.fixtures.map(m=>[m.t,m.home,m.away,m.c]));
   store.set(K.team,Object.fromEntries(state.teams));
+  store.set(K.sc,state.scRaw);
 }
 const savePreds=()=>store.set(K.preds,state.preds);
 const saveCfg=()=>store.set(K.cfg,state.cfg);
@@ -579,6 +595,36 @@ function ingest(j,fallbackCode){
   return {res,fix};
 }
 
+function ingestScorers(j,code){
+  state.scRaw[code]=(j.scorers||[]).map(x=>({
+    t:(x.team&&x.team.name)||'', n:(x.player&&x.player.name)||'',
+    g:x.goals||0, m:x.playedMatches||0
+  })).filter(x=>x.t&&x.n&&x.g>0);
+  state.scorersOk=true;
+}
+
+function scorersFor(team){
+  const acc=new Map();
+  for(const rows of Object.values(state.scRaw))
+    for(const r of rows){
+      if(r.t!==team) continue;
+      const c=acc.get(r.n)||{g:0,m:0};
+      c.g+=r.g; c.m+=r.m; acc.set(r.n,c);
+    }
+  return [...acc.entries()].map(([n,v])=>({n,g:v.g,m:v.m}));
+}
+
+function computeAvg(){
+  const a=new Map(), cut=Date.now()-400*DAY;
+  for(const r of state.results){
+    if(r.t<cut) continue;
+    for(const [nm,g] of [[r.home,r.hg],[r.away,r.ag]]){
+      const c=a.get(nm)||{g:0,n:0}; c.g+=g; c.n++; a.set(nm,c);
+    }
+  }
+  state.avg=a;
+}
+
 function merge(res,fix){
   const kr=new Set(state.results.map(m=>m.t+'|'+m.home+'|'+m.away));
   for(const r of res){ const k=r.t+'|'+r.home+'|'+r.away; if(!kr.has(k)){kr.add(k); state.results.push(r);} }
@@ -612,30 +658,37 @@ async function load(hard){
   if(hard){ state.results=[]; state.fixtures=[]; mt.tasks={}; }
 
   // la saison écoulée ne bouge plus : inutile de la retélécharger
-  const tasks=[['__fix__',0]];
-  for(const c of codes) tasks.push([c,cur]);
-  for(const c of codes) if(!mt.tasks[c+'|'+prev]) tasks.push([c,prev]);
+  const tasks=[['fix','',0]];
+  for(const c of codes) tasks.push(['m',c,cur]);
+  for(const c of codes) if(!mt.tasks[c+'|'+prev]) tasks.push(['m',c,prev]);
+  for(const c of codes) tasks.push(['sc',c,cur]);
 
   let done=0;
   const step=m=>{ $('loadMsg').textContent=m; bar.style.width=(done/tasks.length*100)+'%'; };
 
   try{
-    for(const [c,s] of tasks){
-      const isFix=c==='__fix__';
-      step(isFix?'Matchs à venir…':`${compName(c)} ${s}-${String(s+1).slice(2)} — ${done+1}/${tasks.length}`);
+    for(const [kind,c,s] of tasks){
+      step(kind==='fix' ? 'Matchs à venir…'
+         : kind==='sc' ? `Buteurs · ${compName(c)} — ${done+1}/${tasks.length}`
+         : `${compName(c)} ${s}-${String(s+1).slice(2)} — ${done+1}/${tasks.length}`);
       let tries=0;
       while(true){
         try{
-          const path=isFix
-            ? `/v4/matches?competitions=${codes.join(',')}&dateFrom=${iso(Date.now())}&dateTo=${iso(Date.now()+9*DAY)}`
-            : `/v4/competitions/${c}/matches?season=${s}`;
-          const j=await apiGet(path);
-          const {res,fix}=ingest(j,isFix?null:c);
-          merge(res,fix);
-          if(!isFix) mt.tasks[c+'|'+s]=Date.now();
+          if(kind==='fix'){
+            const j=await apiGet(`/v4/matches?competitions=${codes.join(',')}&dateFrom=${iso(Date.now())}&dateTo=${iso(Date.now()+9*DAY)}`);
+            const r=ingest(j,null); merge(r.res,r.fix);
+          }else if(kind==='sc'){
+            const j=await apiGet(`/v4/competitions/${c}/scorers?season=${s}&limit=100`);
+            ingestScorers(j,c);
+          }else{
+            const j=await apiGet(`/v4/competitions/${c}/matches?season=${s}`);
+            const r=ingest(j,c); merge(r.res,r.fix);
+            mt.tasks[c+'|'+s]=Date.now();
+          }
           break;
         }catch(e){
           if(e.rate&&tries++<3){ step("Limite de l'API atteinte, pause…"); await sleep(20000); continue; }
+          if(kind==='sc'){ if(state.scorersOk===null) state.scorersOk=false; break; }
           if(e.fatal) throw e;
           break;
         }
@@ -668,7 +721,7 @@ function recordPreds(){
     const p=predict(m,f.home,f.away,false);
     if(!p) continue;
     const c=confidence(m,f.home,f.away);
-    if(!c||!c.link) continue;                        // pronostic non valide, on n'enregistre pas
+    if(!c||!c.link) continue;                        // équipes non reliées : rien à enregistrer
     const k=pkey(f);
     const old=state.preds[k];
     if(old&&old.res) continue;
@@ -714,7 +767,7 @@ function confidence(m,h,a){
   const few=Math.min(m.seen[ih],m.seen[ia]), link=m.comp[ih]===m.comp[ia];
   const g=!link?'D':few>=25?'A':few>=12?'B':few>=6?'C':'D';
   return {few,link,grade:g,
-    txt:!link?'aucun adversaire commun — pronostic non valide'
+    txt:!link?'équipes non reliées — pronostic non valide'
       :few>=25?`bon historique (${few.toFixed(0)} matchs)`
       :few>=12?`historique correct (${few.toFixed(0)} matchs)`
       :few>=6?`historique court (${few.toFixed(0)} matchs)`
@@ -732,32 +785,18 @@ function dayLabel(t){
 }
 const hhmm=t=>new Date(t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
 
-function card(item){
-  const m=state.model, {home,away,c}=item;
-  const done=item.hg!==undefined;
-  const p=m?predict(m,home,away,false):null;
-  const conf=m?confidence(m,home,away):null;
-  const pred=state.preds[pkey(item)];
-
-  let badge='';
-  if(done&&pred){
-    const o=item.hg>item.ag?0:item.hg===item.ag?1:2;
-    const best=pred.p.indexOf(Math.max(...pred.p));
-    badge=`<span class="badge ${best===o?'ok':'ko'}">${best===o?'✓':'✗'}</span>`;
-  }else if(conf){ badge=`<span class="badge ${conf.grade.toLowerCase()}">${conf.grade}</span>`; }
-
-  const line=(nm,prob,score,fav)=>
-    `<div class="side${fav?' fav':''}${done&&!fav?' dim':''}">${img(nm)}
-      <span class="nm">${esc(nm)}</span>
-      ${done?`<span class="sc">${score}</span>`:`<span class="pr">${prob}</span>`}</div>`;
-
-  const favH=done?item.hg>item.ag:(p?p.home>=p.away:false);
-  const favA=done?item.ag>item.hg:(p?p.away>p.home:false);
-
-  return `<button class="fx" data-k="${esc(item.t+'|'+home+'|'+away)}">
-    <div class="when"><span class="lft">${done?'Terminé':hhmm(item.t)} · ${esc(compName(c))}</span>${badge}</div>
-    ${line(home,p?pct(p.home):'—',done?item.hg:'',favH)}
-    ${line(away,p?pct(p.away):'—',done?item.ag:'',favA)}
+function card(f){
+  const m=state.model;
+  const p=m?predict(m,f.home,f.away,false):null;
+  const conf=m?confidence(m,f.home,f.away):null;
+  const badge=conf?`<span class="badge ${conf.grade.toLowerCase()}">${conf.grade}</span>`:'';
+  const line=(nm,prob,fav)=>
+    `<div class="side${fav?' fav':''}">${img(nm)}<span class="nm">${esc(nm)}</span>
+      <span class="pr">${prob}</span></div>`;
+  return `<button class="fx" data-k="${esc(f.t+'|'+f.home+'|'+f.away)}">
+    <div class="when"><span class="lft">${hhmm(f.t)} · ${esc(compName(f.c))}</span>${badge}</div>
+    ${line(f.home,p?pct(p.home):'—',!!p&&p.home>=p.away)}
+    ${line(f.away,p?pct(p.away):'—',!!p&&p.away>p.home)}
     ${p?`<div class="minibar"><i class="h" style="flex:${p.home}"></i><i class="d" style="flex:${p.draw}"></i><i class="a" style="flex:${p.away}"></i></div>`:''}
     <div class="conf">${p&&conf?esc(conf.txt):'en attente de données'}</div>
   </button>`;
@@ -766,14 +805,13 @@ function card(item){
 function renderList(){
   const codes=new Set(state.cfg.comps);
   const now=Date.now();
-  const items=[
-    ...state.results.filter(r=>codes.has(r.c)&&r.t>now-3*DAY&&r.t<now),
-    ...state.fixtures.filter(f=>codes.has(f.c)&&f.t>now-3*3600000)
-  ].sort((a,b)=>a.t-b.t);
+  const items=state.fixtures
+    .filter(f=>codes.has(f.c)&&f.t>now-2*3600000)
+    .sort((a,b)=>a.t-b.t);
 
   if(!items.length){
-    $('list').innerHTML=`<p class="empty">Aucun match dans les compétitions choisies.<br>
-      Ouvre Réglages pour charger les données.</p>`;
+    $('list').innerHTML=`<p class="empty">Aucun match à venir dans les compétitions choisies.<br>
+      Les matchs joués basculent dans l'onglet Historique.</p>`;
     return;
   }
   let html='',day='';
@@ -823,6 +861,54 @@ function renderGrid(p){
   $('grid').innerHTML=html;
 }
 
+function scorerProbs(team,lam){
+  const list=scorersFor(team), av=state.avg.get(team);
+  if(!list.length||!av||!av.n) return [];
+  const base=av.g/av.n;
+  if(base<=0) return [];
+  const raw=list.filter(x=>x.m>=3)
+    .map(x=>({n:x.n, lam:(x.g/x.m)*(lam/base)}));
+  // contrainte de cohérence : les buts des joueurs ne peuvent pas
+  // dépasser les buts attendus de l'équipe
+  const tot=raw.reduce((s,x)=>s+x.lam,0);
+  const k=tot>lam?lam/tot:1;
+  return raw.map(x=>({n:x.n, team, p:1-Math.exp(-x.lam*k)}))
+            .filter(x=>x.p>=0.05);
+}
+
+function renderReco(h,a,p){
+  const outs=[[h,p.home],['Match nul',p.draw],[a,p.away]].sort((x,y)=>y[1]-x[1]);
+  const over=p.over[2.5]>=0.5;
+  const totP=over?p.over[2.5]:1-p.over[2.5];
+  const exp=(p.lh+p.la);
+  const top=p.top[0];
+  const sc=[...scorerProbs(h,p.lh),...scorerProbs(a,p.la)]
+    .sort((x,y)=>y.p-x.p).slice(0,3);
+
+  const row=(k,v)=>`<div class="r"><span class="k">${k}</span><span class="v">${v}</span></div>`;
+  let html='';
+  html+=row('Vainqueur',`${esc(outs[0][0])} <em>${(outs[0][1]*100).toFixed(0)} %</em>`);
+  html+=row('Total de buts',
+    `${over?'Plus':'Moins'} de 2,5 buts <em>${(totP*100).toFixed(0)} %</em>`+
+    `<small>${exp.toFixed(2)} buts attendus dans le match</small>`);
+  html+=row('Score exact',`${top.x}–${top.y} <em>${(top.p*100).toFixed(1)} %</em>`);
+  html+=row('Les deux marquent',
+    `${p.btts>=0.5?'Oui':'Non'} <em>${((p.btts>=0.5?p.btts:1-p.btts)*100).toFixed(0)} %</em>`);
+  if(sc.length){
+    html+=row('Buteur',sc.map(x=>
+      `${esc(x.n)} <em>${(x.p*100).toFixed(0)} %</em>`).join('<br>'));
+  }else{
+    html+=row('Buteur',state.scorersOk===false
+      ? '<small>non fourni par ton plan</small>'
+      : '<small>données de buteurs pas encore chargées</small>');
+  }
+  $('reco').innerHTML=html;
+
+  $('recoNote').textContent = sc.length
+    ? "Probabilité qu'un joueur marque au moins une fois, estimée à partir de son rythme de but cette saison, ajusté aux buts attendus de son équipe dans ce match. L'API gratuite ne donne ni compositions ni blessures : un joueur absent ou remplaçant apparaîtra quand même."
+    : "";
+}
+
 function renderDetail(){
   const m=state.model; if(!m||!state.sel) return;
   const h=$('home').value||state.sel.home, a=$('away').value||state.sel.away;
@@ -836,7 +922,8 @@ function renderDetail(){
 
   if(h===a){
     $('xg').textContent='Choisis deux équipes différentes.';
-    ['grid','bar','barkey','markets','topScores'].forEach(id=>$(id).innerHTML='');
+    ['grid','bar','barkey','markets','topScores','reco'].forEach(id=>$(id).innerHTML='');
+    $('recoNote').textContent='';
     return;
   }
   const p=predict(m,h,a,$('neutral').checked);
@@ -858,9 +945,10 @@ function renderDetail(){
     [`${h} ou nul`,p.home+p.draw],[`${a} ou nul`,p.away+p.draw]
   ].map(([k,v])=>`<dt>${esc(k)}</dt><dd>${pct(v)}</dd>`).join('');
   $('topScores').innerHTML=p.top.map(s=>`<span>${s.x}–${s.y}<b>${(s.p*100).toFixed(1)}%</b></span>`).join('');
+  renderReco(h,a,p);
 
   const c=confidence(m,h,a), warn=[];
-  if(c&&!c.link) warn.push(`<b>${esc(h)}</b> et <b>${esc(a)}</b> n'ont aucun adversaire en commun dans les données chargées : leurs forces sont mesurées sur deux échelles séparées, ce pronostic ne veut rien dire. Coche la Ligue des champions, c'est elle qui relie les championnats.`);
+  if(c&&!c.link) warn.push(`Aucune chaîne de matchs ne relie <b>${esc(h)}</b> à <b>${esc(a)}</b> dans les données chargées : leurs forces sont mesurées sur deux échelles séparées, ce pronostic ne veut rien dire. Coche la Ligue des champions, c'est elle qui relie les championnats entre eux.`);
   else if(c&&c.few<6) warn.push(`L'équipe la moins vue n'a que ${c.few.toFixed(1)} matchs pondérés. Le modèle la ramène vers la moyenne, donc l'écart affiché est sous-estimé — c'est volontaire.`);
   $('mismatch').innerHTML=warn.join('');
   $('mismatch').classList.toggle('hidden',!warn.length);
@@ -944,6 +1032,7 @@ function fillSelects(){
 function refresh(){
   state.model = state.results.length>=10
     ? fit(state.results,{halfLife:state.cfg.hl||250,reg:state.cfg.reg||20}) : null;
+  computeAvg();
   resolvePreds();
   recordPreds();
   fillSelects(); renderStatus(); renderList(); renderRatings(); renderHistory();
@@ -1021,8 +1110,9 @@ $('reload').onclick=()=>load(false);
 $('hard').onclick=()=>load(true);
 $('wipe').onclick=()=>{
   if(!confirm("Effacer les matchs en cache et tout l'historique des pronostics ?")) return;
-  [K.res,K.fix,K.team,K.meta,K.preds].forEach(store.del);
+  [K.res,K.fix,K.team,K.meta,K.preds,K.sc].forEach(store.del);
   state.results=[]; state.fixtures=[]; state.teams=new Map(); state.preds={};
+  state.scRaw={}; state.scorersOk=null;
   refresh();
 };
 $('key').oninput=()=>{
