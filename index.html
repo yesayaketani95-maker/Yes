@@ -315,6 +315,14 @@ ul.why .up{color:var(--good)} ul.why .dn{color:var(--warn)}
       </div>
       <div class="prog hidden" id="eloProg"><i></i></div>
       <p class="note" id="eloMsg" style="margin-top:10px"></p>
+      <details>
+        <summary>Si le chargement échoue : coller à la main</summary>
+        <p class="note" style="margin-top:8px">Ouvre <a id="eloLink" href="#" target="_blank"
+          rel="noopener">cette adresse</a> dans un autre onglet, sélectionne tout le texte,
+          copie, et colle-le ici. C'est un simple fichier texte.</p>
+        <textarea id="eloPaste" placeholder="Rank,Club,Country,Level,Elo,From,To&#10;1,Man City,ENG,1,2035.2,..."></textarea>
+        <div class="btnrow" style="margin-top:8px"><button id="eloPasteGo">Utiliser ce texte</button></div>
+      </details>
       <div id="eloBox"></div>
     </div>
 
@@ -1091,34 +1099,60 @@ function renderAlias(){
 /* ============================================================
    CLUB ELO — force de référence de tous les clubs européens
    ============================================================ */
+const eloUrl=()=>'https://api.clubelo.com/'+iso(Date.now());
+
+function parseElo(text){
+  const lines=String(text).split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<2) throw new Error('texte trop court');
+  const head=splitLine(lines[0]).map(h=>h.toLowerCase().trim());
+  const ic=head.indexOf('club'), ie=head.indexOf('elo'),
+        ico=head.indexOf('country'), il=head.indexOf('level');
+  if(ic<0||ie<0) throw new Error('colonnes Club et Elo introuvables');
+  const out=[];
+  for(let i=1;i<lines.length;i++){
+    const c=splitLine(lines[i]);
+    const e=parseFloat(c[ie]);
+    if(!c[ic]||!isFinite(e)) continue;
+    out.push({club:c[ic], elo:Math.round(e*10)/10,
+              pays:ico>=0?c[ico]:'', niv:il>=0?+c[il]||0:0});
+  }
+  if(!out.length) throw new Error('aucune note lue');
+  return out;
+}
+
+function applyElo(rows){
+  state.elo=rows; saveElo(); refresh();
+  const done=Object.values(state.ealias).filter(Boolean).length;
+  $('eloMsg').textContent=`${rows.length} clubs notés, ${done} rattachés automatiquement.`;
+}
+
+// 1) le proxy  2) l'appel direct depuis le navigateur  3) le collage manuel
+async function fetchElo(){
+  const url=eloUrl();
+  let why='';
+  try{
+    const r=await fetch('/api/fd?elo='+encodeURIComponent(url));
+    const txt=await r.text();
+    if(r.ok && txt.trim() && !txt.trimStart().startsWith('{')) return txt;
+    why=txt;
+    try{ const j=JSON.parse(txt); if(j.message) why=j.message; }catch(_){}
+    if(!why) why='code '+r.status;
+  }catch(e){ why=e.message; }
+  try{
+    const r2=await fetch(url);                      // Club Elo autorise peut-être l'accès direct
+    if(r2.ok){ const t2=await r2.text(); if(t2.trim()) return t2; }
+  }catch(_){}
+  throw new Error(why);
+}
+
 async function loadElo(){
   $('eloGo').disabled=true; $('eloProg').classList.remove('hidden');
   $('eloMsg').textContent='Téléchargement…';
   try{
-    const url='https://api.clubelo.com/'+iso(Date.now());
-    const r=await fetch('/api/fd?elo='+encodeURIComponent(url));
-    if(!r.ok) throw new Error('code '+r.status);
-    const lines=(await r.text()).split(/\r?\n/).filter(l=>l.trim());
-    const head=splitLine(lines[0]).map(h=>h.toLowerCase());
-    const ic=head.indexOf('club'), ie=head.indexOf('elo'),
-          ico=head.indexOf('country'), il=head.indexOf('level');
-    if(ic<0||ie<0) throw new Error('format inattendu');
-    const out=[];
-    for(let i=1;i<lines.length;i++){
-      const c=splitLine(lines[i]);
-      const e=parseFloat(c[ie]);
-      if(!c[ic]||!isFinite(e)) continue;
-      out.push({club:c[ic], elo:Math.round(e*10)/10,
-                pays:ico>=0?c[ico]:'', niv:il>=0?+c[il]||0:0});
-    }
-    if(!out.length) throw new Error('aucune note lue');
-    state.elo=out; saveElo();
-    refresh();
-    const done=Object.values(state.ealias).filter(Boolean).length;
-    $('eloMsg').textContent=`${out.length} clubs notés, ${done} rattachés automatiquement.`;
+    applyElo(parseElo(await fetchElo()));
   }catch(e){
-    $('eloMsg').innerHTML=`<span style="color:var(--warn)">Échec : ${esc(e.message)}. `+
-      `Le proxy api/fd.js doit être en version 4.1 pour joindre Club Elo.</span>`;
+    $('eloMsg').innerHTML=`<span style="color:var(--warn)">Échec : ${esc(e.message)}.</span> `+
+      `Utilise le collage manuel juste en dessous, ça marche toujours.`;
   }
   $('eloProg').classList.add('hidden'); $('eloGo').disabled=false;
 }
@@ -1835,6 +1869,12 @@ $('csvSrc').querySelectorAll('input').forEach(i=>i.onchange=()=>{
 });
 $('csvGo').onclick=loadCsv;
 $('eloGo').onclick=loadElo;
+$('eloLink').href=eloUrl();
+$('eloLink').textContent=eloUrl();
+$('eloPasteGo').onclick=()=>{
+  try{ applyElo(parseElo($('eloPaste').value)); $('eloPaste').value=''; }
+  catch(e){ $('eloMsg').innerHTML=`<span style="color:var(--warn)">${esc(e.message)}</span>`; }
+};
 
 $('presetCL').onclick=()=>{
   state.cfg.comps=COMPS.map(x=>x[0]);
