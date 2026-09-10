@@ -1,26 +1,54 @@
-// À placer dans ton dépôt sous  api/fd.js
-//
-// Vercel expose ce fichier sur  /api/fd
-// Il garde ta clé côté serveur et met les réponses en cache, ce qui évite
-// de taper dans la limite de 10 requêtes/minute du plan gratuit.
-//
-// Avant de déployer : Vercel → Settings → Environment Variables → FD_TOKEN = ta clé
-
 module.exports = async (req, res) => {
-  const path = String((req.query && req.query.path) || '');
+  const q = req.query || {};
 
-  // on n'autorise que les chemins v4 de l'API, pour ne pas transformer
-  // le proxy en relais ouvert vers n'importe quelle URL
+  // fichiers CSV publics (football-data.co.uk)
+  if (q.csv) {
+    const url = String(q.csv);
+    if (!/^https:\/\/www\.football-data\.co\.uk\/[A-Za-z0-9/_.-]+\.csv$/.test(url)) {
+      res.status(400).json({ message: 'URL CSV refusee : ' + url });
+      return;
+    }
+    try {
+      const r = await fetch(url);
+      const body = await r.text();
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=604800');
+      res.status(r.status).send(body);
+    } catch (e) {
+      res.status(502).json({ message: 'CSV injoignable : ' + e.message });
+    }
+    return;
+  }
+
+  // notes Club Elo
+  if (q.elo) {
+    const url = String(q.elo);
+    if (!/^https?:\/\/api\.clubelo\.com\/[A-Za-z0-9_-]+$/.test(url)) {
+      res.status(400).json({ message: 'URL Elo refusee : ' + url });
+      return;
+    }
+    try {
+      const r = await fetch(url);
+      const body = await r.text();
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Cache-Control', 's-maxage=43200, stale-while-revalidate=86400');
+      res.status(r.status).send(body);
+    } catch (e) {
+      res.status(502).json({ message: 'Club Elo injoignable : ' + e.message });
+    }
+    return;
+  }
+
+  // API football-data.org
+  const path = String(q.path || '');
   if (!/^\/v4\/[A-Za-z0-9/_,-]+(\?[A-Za-z0-9=&,_-]*)?$/.test(path)) {
-    res.status(400).json({ message: 'Chemin refusé : ' + path });
+    res.status(400).json({ message: 'Chemin refuse : ' + path });
     return;
   }
 
   const token = process.env.FD_TOKEN;
   if (!token) {
-    res.status(500).json({
-      message: "La variable d'environnement FD_TOKEN n'est pas définie sur Vercel."
-    });
+    res.status(500).json({ message: "FD_TOKEN n'est pas defini sur Vercel." });
     return;
   }
 
