@@ -1095,7 +1095,7 @@ async function loadElo(){
   $('eloGo').disabled=true; $('eloProg').classList.remove('hidden');
   $('eloMsg').textContent='Téléchargement…';
   try{
-    const url='http://api.clubelo.com/'+iso(Date.now());
+    const url='https://api.clubelo.com/'+iso(Date.now());
     const r=await fetch('/api/fd?elo='+encodeURIComponent(url));
     if(!r.ok) throw new Error('code '+r.status);
     const lines=(await r.text()).split(/\r?\n/).filter(l=>l.trim());
@@ -1118,7 +1118,7 @@ async function loadElo(){
     $('eloMsg').textContent=`${out.length} clubs notés, ${done} rattachés automatiquement.`;
   }catch(e){
     $('eloMsg').innerHTML=`<span style="color:var(--warn)">Échec : ${esc(e.message)}. `+
-      `Vérifie que api/fd.js est bien en version 3.0.</span>`;
+      `Le proxy api/fd.js doit être en version 4.1 pour joindre Club Elo.</span>`;
   }
   $('eloProg').classList.add('hidden'); $('eloGo').disabled=false;
 }
@@ -1463,7 +1463,7 @@ function renderReco(h,a,p){
 
 function renderWhy(h,a,p){
   const m=state.model, ih=m.idx.get(h), ia=m.idx.get(a);
-  if(ih===undefined||ia===undefined){ $('why').innerHTML=''; return; }
+  if(ih===undefined&&ia===undefined){ $('why').innerHTML=''; return; }
 
   // repère : moyenne des équipes réellement observées
   let sa=0,sd=0,c=0;
@@ -1480,15 +1480,14 @@ function renderWhy(h,a,p){
   const li=(t,d)=>`<li><span class="t">${t}</span><span class="d">${d}</span></li>`;
   const L=[];
 
-  const aH=Math.exp(m.att[ih]-mA), aA=Math.exp(m.att[ia]-mA);
-  const cH=Math.exp(-(m.def[ih]-mD)), cA=Math.exp(-(m.def[ia]-mD));
+  const NA='<span style="color:var(--sage)">aucune donnée</span>';
+  const att1=i=>i===undefined?NA:
+    `${mult(Math.exp(m.att[i]-mA))} la moyenne${pos(attOrder,i)?` (${pos(attOrder,i)})`:''}`;
+  const def1=i=>i===undefined?NA:
+    `${mult(Math.exp(-(m.def[i]-mD)))} la moyenne${pos(defOrder,i)?` (${pos(defOrder,i)})`:''}`;
 
-  L.push(li('Attaques',
-    `<b>${esc(h)}</b> marque ${mult(aH)} la moyenne${pos(attOrder,ih)?` (${pos(attOrder,ih)})`:''} ·
-     <b>${esc(a)}</b> ${mult(aA)}${pos(attOrder,ia)?` (${pos(attOrder,ia)})`:''}`));
-  L.push(li('Défenses',
-    `<b>${esc(h)}</b> encaisse ${mult(cH)} la moyenne${pos(defOrder,ih)?` (${pos(defOrder,ih)})`:''} ·
-     <b>${esc(a)}</b> ${mult(cA)}${pos(defOrder,ia)?` (${pos(defOrder,ia)})`:''}`));
+  L.push(li('Attaques',`<b>${esc(h)}</b> marque ${att1(ih)} · <b>${esc(a)}</b> ${att1(ia)}`));
+  L.push(li('Défenses',`<b>${esc(h)}</b> encaisse ${def1(ih)} · <b>${esc(a)}</b> ${def1(ia)}`));
 
   const fh=state.form.get(h), fa=state.form.get(a);
   const say=f=>{
@@ -1513,6 +1512,9 @@ function renderWhy(h,a,p){
 
   const basis=t=>{
     const i=m.idx.get(t), e=eloOf(t);
+    if(i===undefined) return e!==null
+      ? `absente du modèle malgré une note Elo ${e} — recharge les données`
+      : `absente du modèle et sans note Elo : rattache-la dans Réglages → Forces de référence`;
     if(m.seen[i]<1) return `aucun match, note Elo ${e!==null?e:'—'}`;
     return `${m.seen[i].toFixed(0)} matchs pondérés${e!==null?`, Elo ${e}`:''}`;
   };
