@@ -9,10 +9,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --night:#10302E; --recess:#0A2221; --raise:#164240;
-  --chalk:#E8EFE8; --sage:#7B9B94;
-  --sodium:#F0A83C; --cyan:#56B6C8; --warn:#E8734A; --good:#5FBE8A;
-  --line:rgba(232,239,232,.14);
+  --night:#101A2E; --recess:#0A1222; --raise:#1B2A47;
+  --chalk:#E9EDF6; --sage:#8A99B8;
+  --sodium:#F0A83C; --cyan:#4FB0E0; --warn:#E8734A; --good:#5FBE8A;
+  --line:rgba(233,237,246,.15);
   --tabh:64px;
 }
 *{box-sizing:border-box}
@@ -42,8 +42,8 @@ select{appearance:none;-webkit-appearance:none;padding-right:28px;
   background-position:calc(100% - 15px) 19px,calc(100% - 10px) 19px;background-size:5px 5px;background-repeat:no-repeat}
 button{background:var(--raise);color:var(--chalk);border:0;border-radius:10px;
   padding:11px 14px;font-weight:600;cursor:pointer}
-button:hover{background:#1D5350}
-button.primary{background:var(--sodium);color:#12211B}
+button:hover{background:#23345A}
+button.primary{background:var(--sodium);color:#0F1626}
 button:disabled{opacity:.45}
 button:focus-visible,select:focus-visible,input:focus-visible,.fx:focus-visible{outline:2px solid var(--sodium);outline-offset:2px}
 .btnrow{display:flex;gap:8px;flex-wrap:wrap}
@@ -60,7 +60,7 @@ label.check input{width:auto;accent-color:var(--sodium)}
 
 /* --- barre d'onglets --- */
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;
-  background:rgba(10,34,33,.94);backdrop-filter:blur(12px);
+  background:rgba(10,18,34,.94);backdrop-filter:blur(12px);
   border-top:1px solid var(--line);
   padding-bottom:env(safe-area-inset-bottom);
   display:flex}
@@ -79,15 +79,15 @@ label.check input{width:auto;accent-color:var(--sodium)}
 /* --- carte match --- */
 .fx{display:block;width:100%;text-align:left;background:var(--recess);border:0;border-radius:14px;
   padding:13px 15px;margin-bottom:9px;cursor:pointer;color:inherit;font-weight:400}
-.fx:hover{background:#0E2A28}
+.fx:hover{background:#0E1830}
 .fx .when{display:flex;justify-content:space-between;align-items:center;gap:10px;
   color:var(--sage);font-size:12.5px}
 .fx .when .lft{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .badge{flex:0 0 auto;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;
-  justify-content:center;font-size:12px;font-weight:700;color:#0C1C18}
+  justify-content:center;font-size:12px;font-weight:700;color:#0A1020}
 .badge.a{background:var(--good)} .badge.b{background:var(--sodium)}
-.badge.c{background:#C98A5E} .badge.d{background:#8B7B72}
-.badge.e{background:#6E93B8}
+.badge.c{background:#C98A5E} .badge.d{background:#7C8598}
+.badge.e{background:#79A7DE}
 .badge.ok{background:var(--good)} .badge.ko{background:var(--warn);color:#fff}
 .fx .side{display:flex;align-items:center;gap:10px;margin-top:9px;font-size:16px;font-weight:500}
 .fx .side img{width:22px;height:22px;object-fit:contain;flex:0 0 22px}
@@ -98,7 +98,7 @@ label.check input{width:auto;accent-color:var(--sodium)}
 .fx .side.dim{opacity:.55}
 .minibar{display:flex;height:5px;border-radius:3px;overflow:hidden;margin-top:11px}
 .minibar i{display:block}
-.minibar .h{background:var(--sodium)} .minibar .d{background:#8FA39B} .minibar .a{background:var(--cyan)}
+.minibar .h{background:var(--sodium)} .minibar .d{background:#8593AD} .minibar .a{background:var(--cyan)}
 .conf{color:var(--sage);font-size:12px;margin-top:7px}
 .empty{color:var(--sage);font-size:14px;text-align:center;padding:40px 20px;line-height:1.6}
 
@@ -115,14 +115,14 @@ table.grid{border-collapse:separate;border-spacing:2px;margin:0 auto}
 table.grid th{font-weight:500;font-size:11px;color:var(--sage);padding:0;width:34px;height:20px}
 table.grid th.side{width:20px;height:34px}
 table.grid td{width:34px;height:34px;border-radius:3px;text-align:center;font-size:10.5px;
-  color:var(--chalk);background:rgba(232,239,232,.05)}
+  color:var(--chalk);background:rgba(233,237,246,.05)}
 table.grid td span{opacity:.85}
-table.grid td.lit{color:#0C1C18}
+table.grid td.lit{color:#0A1020}
 table.grid td.lit span{opacity:1;font-weight:700}
 .axis{display:flex;justify-content:space-between;color:var(--sage);font-size:12px;margin-top:8px}
 .bar{display:flex;height:34px;border-radius:8px;overflow:hidden;margin-top:16px}
-.bar div{display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#12211B;min-width:0}
-.bar .h{background:var(--sodium)} .bar .d{background:#B9C7C0} .bar .a{background:var(--cyan)}
+.bar div{display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#0F1626;min-width:0}
+.bar .h{background:var(--sodium)} .bar .d{background:#B4BFD6} .bar .a{background:var(--cyan)}
 .barkey{display:flex;justify-content:space-between;color:var(--sage);font-size:12.5px;margin-top:7px;gap:8px}
 dl.rows{margin:0;display:grid;grid-template-columns:1fr auto;gap:7px 12px;font-size:14.5px}
 dl.rows dt{color:var(--sage);margin:0;min-width:0}
@@ -153,6 +153,13 @@ details[open] summary::before{content:'– '}
 .reco .k{color:var(--sage);font-size:12.5px;flex:0 0 auto}
 .reco .v{font-weight:600;text-align:right;min-width:0}
 .reco .v em{font-style:normal;color:var(--sodium)}
+ul.why{list-style:none;margin:0;padding:0;font-size:14px}
+ul.why li{padding:9px 0;border-top:1px solid var(--line);display:flex;gap:10px;align-items:baseline}
+ul.why li:first-child{border-top:0}
+ul.why .t{color:var(--sage);font-size:12.5px;flex:0 0 92px}
+ul.why .d{flex:1 1 auto}
+ul.why b{font-weight:600}
+ul.why .up{color:var(--good)} ul.why .dn{color:var(--warn)}
 .alias{display:grid;grid-template-columns:1fr;gap:6px;padding:10px 0;border-top:1px solid var(--line)}
 .alias b{font-weight:600;font-size:14.5px}
 .alias select{font-size:14px;padding:8px 10px}
@@ -200,6 +207,12 @@ details[open] summary::before{content:'– '}
       <h2>Pronostic recommandé</h2>
       <div class="reco" id="reco"></div>
       <p class="note" id="recoNote" style="margin-top:10px"></p>
+      <hr class="rule">
+      <h2>Pourquoi</h2>
+      <ul class="why" id="why"></ul>
+      <p class="note" style="margin-top:10px">La ligne « Forme » compare les derniers matchs à ce que
+        le modèle attendait. Un écart faible est normal : les matchs récents pèsent déjà lourd dans les
+        notes ci-dessus, donc une embellie durable finit absorbée plutôt que signalée ici.</p>
       <details>
         <summary>Changer d'affiche</summary>
         <div style="display:grid;gap:8px;margin-top:10px">
@@ -616,7 +629,7 @@ const state={results:[],fixtures:[],teams:new Map(),preds:{},model:null,
              sel:null,loading:false,view:'vMatches',cfg:{},
              scRaw:{},scorersOk:null,avg:new Map(),
              csvRows:[],alias:{},data:[],
-             elo:[],ealias:{},eloFit:null};
+             elo:[],ealias:{},eloFit:null,form:new Map()};
 
 /* ============================================================
    CHARGEMENT / SAUVEGARDE
@@ -1390,7 +1403,7 @@ function renderGrid(p){
   for(let x=0;x<=N;x++){
     html+=`<tr><th class="side">${lab(x)}</th>`;
     for(let y=0;y<=N;y++){
-      const v=cell(x,y), hue=x>y?'240,168,60':x===y?'232,239,232':'86,182,200';
+      const v=cell(x,y), hue=x>y?'240,168,60':x===y?'226,232,245':'79,176,224';
       const al=Math.pow(v/max,0.6)*0.92;
       html+=`<td class="pop${al>0.45?' lit':''}" style="background:rgba(${hue},${al.toFixed(3)});animation-delay:${(x+y)*14}ms">`+
             `<span>${v>=0.0095?(v*100).toFixed(0):''}</span></td>`;
@@ -1448,6 +1461,66 @@ function renderReco(h,a,p){
     : "";
 }
 
+function renderWhy(h,a,p){
+  const m=state.model, ih=m.idx.get(h), ia=m.idx.get(a);
+  if(ih===undefined||ia===undefined){ $('why').innerHTML=''; return; }
+
+  // repère : moyenne des équipes réellement observées
+  let sa=0,sd=0,c=0;
+  for(let i=0;i<m.teams.length;i++) if(m.seen[i]>0){ sa+=m.att[i]; sd+=m.def[i]; c++; }
+  const mA=c?sa/c:0, mD=c?sd/c:0;
+
+  const obs=[...m.teams.keys()].filter(i=>m.seen[i]>0);
+  const rankBy=(arr,i)=>arr.slice().sort((x,y)=>arr[y]-arr[x]).indexOf(arr[i]);
+  const attOrder=obs.slice().sort((x,y)=>m.att[y]-m.att[x]);
+  const defOrder=obs.slice().sort((x,y)=>m.def[y]-m.def[x]);
+  const pos=(order,i)=>{ const k=order.indexOf(i); return k<0?null:`${k+1}ᵉ sur ${order.length}`; };
+
+  const mult=x=>x>=1?('×'+x.toFixed(2)):('×'+x.toFixed(2));
+  const li=(t,d)=>`<li><span class="t">${t}</span><span class="d">${d}</span></li>`;
+  const L=[];
+
+  const aH=Math.exp(m.att[ih]-mA), aA=Math.exp(m.att[ia]-mA);
+  const cH=Math.exp(-(m.def[ih]-mD)), cA=Math.exp(-(m.def[ia]-mD));
+
+  L.push(li('Attaques',
+    `<b>${esc(h)}</b> marque ${mult(aH)} la moyenne${pos(attOrder,ih)?` (${pos(attOrder,ih)})`:''} ·
+     <b>${esc(a)}</b> ${mult(aA)}${pos(attOrder,ia)?` (${pos(attOrder,ia)})`:''}`));
+  L.push(li('Défenses',
+    `<b>${esc(h)}</b> encaisse ${mult(cH)} la moyenne${pos(defOrder,ih)?` (${pos(defOrder,ih)})`:''} ·
+     <b>${esc(a)}</b> ${mult(cA)}${pos(defOrder,ia)?` (${pos(defOrder,ia)})`:''}`));
+
+  const fh=state.form.get(h), fa=state.form.get(a);
+  const say=f=>{
+    if(!f) return 'pas assez de matchs récents';
+    const txt=`${f.gf} marqué${f.gf>1?'s':''} pour ${f.ef.toFixed(1)} attendu${f.ef>1?'s':''}, `+
+              `${f.ga} encaissé${f.ga>1?'s':''} pour ${f.ea.toFixed(1)}`;
+    if(Math.abs(f.d)<1.8*f.sd) return `${txt} — dans la marge du hasard`;
+    return f.d>0 ? `<span class="up">${txt} — au-dessus de son niveau</span>`
+                 : `<span class="dn">${txt} — en dessous</span>`;
+  };
+  if(fh||fa){
+    L.push(li('Forme',`<b>${esc(h)}</b>, ${fh?fh.n:0} derniers matchs : ${say(fh)}`));
+    L.push(li('',`<b>${esc(a)}</b>, ${fa?fa.n:0} derniers matchs : ${say(fa)}`));
+  }
+
+  const advPct=Math.round((Math.exp(m.adv)-1)*100);
+  L.push(li('Terrain',`recevoir vaut <b>+${advPct} %</b> de buts dans ces données`));
+
+  const ref=Math.exp(m.mu+mA-mD+m.adv)+Math.exp(m.mu+mA-mD);
+  const tot=p.lh+p.la;
+  L.push(li('Total',`<b>${tot.toFixed(2)}</b> buts attendus, contre ${ref.toFixed(2)} pour un match moyen`));
+
+  const basis=t=>{
+    const i=m.idx.get(t), e=eloOf(t);
+    if(m.seen[i]<1) return `aucun match, note Elo ${e!==null?e:'—'}`;
+    return `${m.seen[i].toFixed(0)} matchs pondérés${e!==null?`, Elo ${e}`:''}`;
+  };
+  L.push(li('Base',`<b>${esc(h)}</b> : ${basis(h)} · <b>${esc(a)}</b> : ${basis(a)}`));
+
+  $('why').innerHTML=L.join('');
+}
+
 function renderDetail(){
   const m=state.model; if(!m||!state.sel) return;
   const h=$('home').value||state.sel.home, a=$('away').value||state.sel.away;
@@ -1461,7 +1534,7 @@ function renderDetail(){
 
   if(h===a){
     $('xg').textContent='Choisis deux équipes différentes.';
-    ['grid','bar','barkey','markets','topScores','reco'].forEach(id=>$(id).innerHTML='');
+    ['grid','bar','barkey','markets','topScores','reco','why'].forEach(id=>$(id).innerHTML='');
     $('recoNote').textContent='';
     return;
   }
@@ -1496,6 +1569,7 @@ function renderDetail(){
   ].map(([k,v])=>`<dt>${esc(k)}</dt><dd>${pct(v)}</dd>`).join('');
   $('topScores').innerHTML=p.top.map(s=>`<span>${s.x}–${s.y}<b>${(s.p*100).toFixed(1)}%</b></span>`).join('');
   renderReco(h,a,p);
+  renderWhy(h,a,p);
 
   const c=confidence(m,h,a), warn=[];
   if(c&&c.unknown&&c.unknown.length) warn.push(`<b>${esc(c.unknown.join('</b> et <b>'))}</b> n'a aucun match dans les données chargées : le modèle le remplace par une équipe moyenne du lot. Comme ce lot est fait de grands championnats, l'écart réel est probablement plus marqué que ce qui est affiché. Ce pronostic n'entre pas dans l'historique.`);
@@ -1601,6 +1675,31 @@ function refresh(){
     }
   }
   state.model=m;
+  // Forme : sur les derniers matchs, ce que l'équipe a réellement fait
+  // face à ce que le modèle attendait d'elle. Mesure directe, pas un 2e ajustement.
+  state.form=new Map();
+  if(m){
+    const per=new Map();
+    for(const r of state.data){
+      if(m.idx.get(r.home)===undefined||m.idx.get(r.away)===undefined) continue;
+      const l=lambdas(m,r.home,r.away,false);
+      if(!l) continue;
+      for(const [t,gf,ga,ef,ea] of [[r.home,r.hg,r.ag,l.lh,l.la],[r.away,r.ag,r.hg,l.la,l.lh]]){
+        if(!per.has(t)) per.set(t,[]);
+        per.get(t).push({t:r.t,gf,ga,ef,ea});
+      }
+    }
+    for(const [team,arr] of per){
+      arr.sort((a,b)=>b.t-a.t);
+      const last=arr.slice(0,8);
+      if(last.length<5) continue;
+      let gf=0,ga=0,ef=0,ea=0;
+      for(const x of last){ gf+=x.gf; ga+=x.ga; ef+=x.ef; ea+=x.ea; }
+      // écart-type de la somme des buts sous Poisson : racine de l'espérance
+      const sd=Math.sqrt(ef+ea)||1;
+      state.form.set(team,{n:last.length,gf,ga,ef,ea,d:(gf-ef)-(ga-ea),sd});
+    }
+  }
   computeAvg();
   resolvePreds();
   recordPreds();
