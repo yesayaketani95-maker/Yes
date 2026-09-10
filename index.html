@@ -603,7 +603,8 @@ async function backtest(matches,opts={},onProg){
    ============================================================ */
 const K={res:'prono.res',fix:'prono.fix',team:'prono.team',meta:'prono.meta',
          preds:'prono.preds',cfg:'prono.cfg',sc:'prono.sc',
-         csv:'prono.csv',alias:'prono.alias',elo:'prono.elo',ealias:'prono.ealias'};
+         csv:'prono.csv',alias:'prono.alias',elo:'prono.elo',ealias:'prono.ealias',
+         live:'prono.live'};
 let STORAGE_OK=true;
 const store={
   get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(_){ return d; } },
@@ -662,6 +663,8 @@ function loadLocal(){
   if(Object.keys(state.scRaw).length) state.scorersOk=true;
   state.csvRows=(store.get(K.csv,[])||[]).map(a=>({t:a[0],home:a[1],away:a[2],hg:a[3],ag:a[4],c:a[5]}));
   state.alias=store.get(K.alias,{})||{};
+  const lv=store.get(K.live,null);
+  if(lv&&Date.now()-lv.ts<4*3600000) state.live=lv.rows||[];
   state.elo=store.get(K.elo,[])||[];
   state.ealias=store.get(K.ealias,{})||{};
   if(!Array.isArray(state.cfg.csv)) state.cfg.csv=DEFAULT_CSV.slice();
@@ -674,6 +677,7 @@ function saveData(){
 }
 const saveCsv=()=>store.set(K.csv,state.csvRows.map(m=>[m.t,m.home,m.away,m.hg,m.ag,m.c]));
 const saveAlias=()=>store.set(K.alias,state.alias);
+const saveLive=()=>store.set(K.live,{ts:Date.now(),rows:state.live});
 const saveElo=()=>store.set(K.elo,state.elo);
 const saveEalias=()=>store.set(K.ealias,state.ealias);
 const savePreds=()=>store.set(K.preds,state.preds);
@@ -1287,16 +1291,26 @@ async function refreshLive(){
     const r=ingest(j,null);
     merge(r.res,r.fix);
     state.live=r.live;
-    saveData(); refresh();
+    saveData(); saveLive(); refresh();
   }catch(_){}
   liveBusy=false;
 }
-setInterval(()=>{
+// un match dont le coup d'envoi est passé sans résultat connu est
+// forcément en cours ou vient de finir : il faut aller chercher son score
+function enCours(){
   const now=Date.now();
-  const actif = state.live.length>0 ||
-    state.fixtures.some(f=>f.t>now-3*3600000 && f.t<now+20*60000);
-  if(actif) refreshLive();
-}, 120000);
+  const joue=new Set(state.results.map(r=>r.home+'|'+r.away));
+  return state.fixtures.filter(f=>
+    f.t<=now && f.t>now-3.5*3600000 &&
+    !state.live.some(l=>l.home===f.home&&l.away===f.away) &&
+    !joue.has(f.home+'|'+f.away));
+}
+function besoinDeScores(){
+  const now=Date.now();
+  return state.live.length>0 || enCours().length>0 ||
+         state.fixtures.some(f=>f.t>now && f.t<now+20*60000);
+}
+setInterval(()=>{ if(besoinDeScores()) refreshLive(); }, 120000);
 
 /* ============================================================
    PRONOSTICS ENREGISTRÉS
@@ -1411,7 +1425,7 @@ function card(f,kind){
   const p=m?predictAny(m,f.home,f.away,false):null;
   const conf=m?confidence(m,f.home,f.away):null;
   const pred=state.preds[pkey(f)];
-  const done=kind==='done', live=kind==='live';
+  const done=kind==='done', wait=kind==='wait', live=kind==='live'||wait;
 
   let badge='';
   if(done&&pred){
@@ -1422,24 +1436,28 @@ function card(f,kind){
     badge=`<span class="badge ${conf.grade.toLowerCase()}">${conf.grade}</span>`;
   }
 
-  const head = live
+  const head = wait
+    ? `<span class="pill"><i></i>EN COURS</span> · ${esc(compName(f.c))}`
+    : live
     ? `<span class="pill"><i></i>${f.pause?'MI-TEMPS':'EN DIRECT'}</span> · ${esc(compName(f.c))}`
     : done ? `Terminé · ${esc(compName(f.c))}`
     : `${hhmm(f.t)} · ${esc(compName(f.c))}`;
 
   // en direct et après match, le score prime ; avant, la probabilité
   const right=(side)=>{
+    if(wait) return `<span class="sc">·</span>`;
     if(done||live) return `<span class="sc">${side==='h'?f.hg:f.ag}</span>`;
     return `<span class="pr">${p?pct(side==='h'?p.home:p.away):'—'}</span>`;
   };
-  const favH = (done||live) ? f.hg>f.ag : (!!p&&p.home>=p.away);
-  const favA = (done||live) ? f.ag>f.hg : (!!p&&p.away>p.home);
+  const favH = wait ? false : (done||live) ? f.hg>f.ag : (!!p&&p.home>=p.away);
+  const favA = wait ? false : (done||live) ? f.ag>f.hg : (!!p&&p.away>p.home);
   const line=(nm,fav,side)=>
     `<div class="side${fav?' fav':''}${(done||live)&&!fav?' dim':''}">${img(nm)}
       <span class="nm">${esc(nm)}</span>${right(side)}</div>`;
 
   let foot;
-  if(pred){
+  if(wait&&!pred){ foot="coup d'envoi passé, score en cours de récupération"; }
+  else if(pred){
     const names=[f.home,'Nul',f.away];
     const b=pred.p.indexOf(Math.max(...pred.p));
     foot=`annoncé avant le match : ${esc(names[b])} à ${(pred.p[b]*100).toFixed(0)} %`;
@@ -1462,12 +1480,13 @@ function renderList(){
   const codes=new Set(shown());
   const now=Date.now();
   const live=state.live.filter(f=>codes.has(f.c)).sort((a,b)=>a.t-b.t);
-  const soon=state.fixtures.filter(f=>codes.has(f.c)&&f.t>now-15*60000).sort((a,b)=>a.t-b.t);
+  const wait=enCours().filter(f=>codes.has(f.c)).sort((a,b)=>a.t-b.t);
+  const soon=state.fixtures.filter(f=>codes.has(f.c)&&f.t>now).sort((a,b)=>a.t-b.t);
   const doneToday=state.results
     .filter(r=>codes.has(r.c)&&r.t>now-20*3600000&&r.t<now)
     .sort((a,b)=>b.t-a.t);
 
-  if(!live.length&&!soon.length&&!doneToday.length){
+  if(!live.length&&!wait.length&&!soon.length&&!doneToday.length){
     $('list').innerHTML=`<p class="empty">Aucun match dans les compétitions affichées.<br>
       Ouvre Réglages pour charger ou actualiser les données.</p>`;
     return;
@@ -1475,19 +1494,20 @@ function renderList(){
 
   const idx=[];
   let html='';
-  if(live.length){
+  if(live.length||wait.length){
     html+=`<div class="day live">En direct</div>`;
     for(const f of live){ html+=card(f,'live'); idx.push(f); }
+    for(const f of wait){ html+=card(f,'wait'); idx.push(f); }
+  }
+  if(doneToday.length){
+    html+=`<div class="day">Terminés récemment</div>`;
+    for(const f of doneToday){ html+=card(f,'done'); idx.push(f); }
   }
   let day='';
   for(const f of soon){
     const d=dayLabel(f.t);
     if(d!==day){ day=d; html+=`<div class="day">${esc(d)}</div>`; }
     html+=card(f,'soon'); idx.push(f);
-  }
-  if(doneToday.length){
-    html+=`<div class="day">Terminés récemment</div>`;
-    for(const f of doneToday){ html+=card(f,'done'); idx.push(f); }
   }
   $('list').innerHTML=html;
   $('list').querySelectorAll('.fx').forEach((b,i)=>b.onclick=()=>{
@@ -1899,7 +1919,7 @@ $('reload').onclick=()=>load(false);
 $('hard').onclick=()=>load(true);
 $('wipe').onclick=()=>{
   if(!confirm("Effacer les matchs en cache et tout l'historique des pronostics ?")) return;
-  [K.res,K.fix,K.team,K.meta,K.preds,K.sc,K.csv,K.alias,K.elo,K.ealias].forEach(store.del);
+  [K.res,K.fix,K.team,K.meta,K.preds,K.sc,K.csv,K.alias,K.elo,K.ealias,K.live].forEach(store.del);
   state.results=[]; state.fixtures=[]; state.teams=new Map(); state.preds={};
   state.scRaw={}; state.scorersOk=null; state.csvRows=[]; state.alias={};
   state.elo=[]; state.ealias={}; state.eloFit=null;
@@ -1982,6 +2002,7 @@ refresh();
 
 const mt0=meta();
 if(!state.results.length || Date.now()-mt0.loaded>STALE) load(false);
+else if(besoinDeScores()) refreshLive();
 </script>
 </body>
 </html>
