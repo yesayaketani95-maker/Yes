@@ -87,6 +87,7 @@ label.check input{width:auto;accent-color:var(--sodium)}
   justify-content:center;font-size:12px;font-weight:700;color:#0C1C18}
 .badge.a{background:var(--good)} .badge.b{background:var(--sodium)}
 .badge.c{background:#C98A5E} .badge.d{background:#8B7B72}
+.badge.e{background:#6E93B8}
 .badge.ok{background:var(--good)} .badge.ko{background:var(--warn);color:#fff}
 .fx .side{display:flex;align-items:center;gap:10px;margin-top:9px;font-size:16px;font-weight:500}
 .fx .side img{width:22px;height:22px;object-fit:contain;flex:0 0 22px}
@@ -152,6 +153,13 @@ details[open] summary::before{content:'– '}
 .reco .k{color:var(--sage);font-size:12.5px;flex:0 0 auto}
 .reco .v{font-weight:600;text-align:right;min-width:0}
 .reco .v em{font-style:normal;color:var(--sodium)}
+.alias{display:grid;grid-template-columns:1fr;gap:6px;padding:10px 0;border-top:1px solid var(--line)}
+.alias b{font-weight:600;font-size:14.5px}
+.alias select{font-size:14px;padding:8px 10px}
+.alias .hint{color:var(--sage);font-size:12px}
+.done{display:flex;justify-content:space-between;align-items:center;gap:10px;
+  padding:7px 0;border-top:1px solid var(--line);font-size:13.5px}
+.done button{padding:5px 9px;font-size:12.5px;font-weight:500}
 .reco .v small{display:block;color:var(--sage);font-weight:400;font-size:12px}
 @media (prefers-reduced-motion:no-preference){
   td.pop{animation:pop .28s ease-out backwards}
@@ -232,14 +240,69 @@ details[open] summary::before{content:'– '}
     <p class="status" id="setStatus"></p>
 
     <div class="panel">
-      <h2>Compétitions</h2>
-      <p class="note">Seuls les matchs de ces compétitions seront affichés.</p>
+      <h2>Compétitions affichées</h2>
+      <p class="note">Ce que tu vois dans l'onglet Matchs, et ce qui entre dans l'historique.</p>
+      <div class="comps" id="showComps"></div>
+      <hr class="rule">
+      <h2>Données du modèle</h2>
+      <p class="note">Téléchargées pour estimer la force des équipes, sans être affichées.
+        Charger un championnat national donne au modèle de quoi juger ses clubs quand ils jouent
+        l'Europe — c'est là que se joue la qualité des pronostics.</p>
       <div class="comps" id="comps"></div>
+      <div class="btnrow" style="margin-top:12px">
+        <button id="presetCL">Préréglage Ligue des champions</button>
+      </div>
+      <div style="margin-top:14px">
+        <label class="note" for="depth">Profondeur d'historique</label>
+        <select id="depth">
+          <option value="2">2 saisons</option>
+          <option value="3">3 saisons</option>
+          <option value="4">4 saisons</option>
+        </select>
+      </div>
+      <p class="note" style="margin-top:8px">Plus de saisons, c'est plus d'équipes connues — surtout
+        celles qui ne jouent l'Europe qu'occasionnellement. Le chargement est plus long, et les vieilles
+        saisons pèsent de toute façon peu à cause de la pondération temporelle.</p>
+      <label class="check"><input type="checkbox" id="guess">
+        Estimer quand même les équipes sans aucun match</label>
+      <p class="note" style="margin-top:8px">Une équipe inconnue est alors traitée comme une équipe
+        moyenne du lot chargé. Comme ce lot est fait de grands championnats, tu sous-estimeras l'écart
+        face à un petit club. Ces pronostics portent la mention « ? » et ne comptent pas dans
+        l'historique.</p>
       <div class="btnrow" style="margin-top:14px">
         <button class="primary" id="reload">Actualiser</button>
         <button id="hard">Tout recharger</button>
       </div>
       <div id="loadErr"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Sources complémentaires</h2>
+      <p class="note">Fichiers publics de football-data.co.uk, sans clé. Ils apportent les
+        championnats absents du plan gratuit — Turquie, Grèce, Belgique, Écosse — donc les clubs
+        européens que l'API ne sait pas juger.</p>
+      <div class="comps" id="csvSrc"></div>
+      <div class="prog hidden" id="csvProg"><i></i></div>
+      <p class="note hidden" id="csvMsg"></p>
+      <div class="btnrow" style="margin-top:12px">
+        <button id="csvGo">Charger ces fichiers</button>
+      </div>
+      <div id="csvErr"></div>
+      <div id="aliasBox"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Forces de référence (Club Elo)</h2>
+      <p class="note">Une note de force pour tous les clubs européens, y compris ceux dont le
+        championnat n'existe dans aucune source gratuite. Le modèle s'en sert comme point d'ancrage :
+        une équipe mal connue est ramenée vers sa force estimée plutôt que vers la moyenne, et une
+        équipe sans aucun match devient pronosticable.</p>
+      <div class="btnrow" style="margin-top:12px">
+        <button id="eloGo">Charger les notes Elo</button>
+      </div>
+      <div class="prog hidden" id="eloProg"><i></i></div>
+      <p class="note" id="eloMsg" style="margin-top:10px"></p>
+      <div id="eloBox"></div>
     </div>
 
     <div class="panel">
@@ -280,7 +343,7 @@ details[open] summary::before{content:'– '}
 
     <p class="note" style="text-align:center;margin-top:20px">
       Prono v3.0 — Poisson bivarié, correction Dixon-Coles.<br>
-      Données et écussons : football-data.org.
+      football-data.org · football-data.co.uk · clubelo.com
     </p>
   </section>
 </div>
@@ -317,10 +380,12 @@ function fit(matches, opts={}){
   const reg      = opts.reg ?? 20;
   const sweeps   = opts.sweeps ?? 60;
   const fitRho   = opts.fitRho ?? true;
+  const prior    = opts.prior || null;        // Map nom -> [attaque, défense] a priori
+  const extra    = opts.extraTeams || [];     // équipes sans match, tenues par leur a priori
   const xi = Math.LN2 / halfLife;
   const refDate = opts.refDate ?? Math.max(...matches.map(m=>m.t));
 
-  const teams=[...new Set(matches.flatMap(m=>[m.home,m.away]))].sort((a,b)=>a.localeCompare(b,'fr'));
+  const teams=[...new Set(matches.flatMap(m=>[m.home,m.away]).concat(extra))].sort((a,b)=>a.localeCompare(b,'fr'));
   const idx=new Map(teams.map((t,i)=>[t,i])), n=teams.length, L=matches.length;
   const H=new Int32Array(L), A=new Int32Array(L);
   const GH=new Float64Array(L), GA=new Float64Array(L), W=new Float64Array(L);
@@ -333,6 +398,11 @@ function fit(matches, opts={}){
   for(let i=0;i<L;i++){ asHome[H[i]].push(i); asAway[A[i]].push(i); }
 
   const att=new Float64Array(n), def=new Float64Array(n);
+  const pA=new Float64Array(n), pD=new Float64Array(n);
+  if(prior){
+    teams.forEach((t,i)=>{ const p=prior.get(t); if(p){ pA[i]=p[0]; pD[i]=p[1]; } });
+    att.set(pA); def.set(pD);
+  }
   const seen=new Float64Array(n);
   for(let i=0;i<L;i++){ seen[H[i]]+=W[i]; seen[A[i]]+=W[i]; }
   let adv=0.25;
@@ -355,13 +425,15 @@ function fit(matches, opts={}){
       let G=0,S=0;
       for(const m of asHome[i]){ G+=W[m]*GH[m]; S+=W[m]*Math.exp(mu-def[A[m]]+adv); }
       for(const m of asAway[i]){ G+=W[m]*GA[m]; S+=W[m]*Math.exp(mu-def[H[m]]); }
-      if(S>0) att[i]=newton(a=>G-S*Math.exp(a)-reg*a, a=>-S*Math.exp(a)-reg, att[i]);
+      if(S>0) att[i]=newton(a=>G-S*Math.exp(a)-reg*(a-pA[i]), a=>-S*Math.exp(a)-reg, att[i]);
+      else att[i]=pA[i];                       // aucun match : l'a priori fait foi
     }
     for(let i=0;i<n;i++){
       let C=0,S=0;
       for(const m of asHome[i]){ C+=W[m]*GA[m]; S+=W[m]*Math.exp(mu+att[A[m]]); }
       for(const m of asAway[i]){ C+=W[m]*GH[m]; S+=W[m]*Math.exp(mu+att[H[m]]+adv); }
-      if(S>0) def[i]=newton(d=>-C+S*Math.exp(-d)-reg*d, d=>-S*Math.exp(-d)-reg, def[i]);
+      if(S>0) def[i]=newton(d=>-C+S*Math.exp(-d)-reg*(d-pD[i]), d=>-S*Math.exp(-d)-reg, def[i]);
+      else def[i]=pD[i];
     }
     { let G=0,S=0;
       for(let m=0;m<L;m++){ G+=W[m]*GH[m]; S+=W[m]*Math.exp(mu+att[H[m]]-def[A[m]]); }
@@ -369,14 +441,19 @@ function fit(matches, opts={}){
     { let S=0;
       for(let m=0;m<L;m++) S+=W[m]*(Math.exp(att[H[m]]-def[A[m]]+adv)+Math.exp(att[A[m]]-def[H[m]]));
       if(S>0) mu=Math.log(totG/S); }
-    let ma=0,md=0;
-    for(let i=0;i<n;i++){ ma+=att[i]; md+=def[i]; }
-    ma/=n; md/=n;
-    for(let i=0;i<n;i++){ att[i]-=ma; def[i]-=md; }
-    mu+=ma-md;
+    // Recentrage uniquement sans a priori : avec a priori, la pénalité fixe déjà
+    // le repère, et recentrer ferait dériver les équipes sans match.
+    if(!prior){
+      let ma=0,md=0;
+      for(let i=0;i<n;i++){ ma+=att[i]; md+=def[i]; }
+      ma/=n; md/=n;
+      for(let i=0;i<n;i++){ att[i]-=ma; def[i]-=md; }
+      mu+=ma-md;
+    }
   }
 
-  const model={teams,idx,att,def,adv,mu,rho:0,seen,halfLife,reg,refDate,n:L};
+  const model={teams,idx,att,def,adv,mu,rho:0,seen,halfLife,reg,refDate,n:L,
+               primed:prior?new Set([...prior.keys()]):new Set()};
 
   if(fitRho){
     const sd=0.05; let best=-Infinity,bestRho=0;
@@ -496,7 +573,8 @@ async function backtest(matches,opts={},onProg){
    STOCKAGE LOCAL
    ============================================================ */
 const K={res:'prono.res',fix:'prono.fix',team:'prono.team',meta:'prono.meta',
-         preds:'prono.preds',cfg:'prono.cfg',sc:'prono.sc'};
+         preds:'prono.preds',cfg:'prono.cfg',sc:'prono.sc',
+         csv:'prono.csv',alias:'prono.alias',elo:'prono.elo',ealias:'prono.ealias'};
 let STORAGE_OK=true;
 const store={
   get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(_){ return d; } },
@@ -515,7 +593,18 @@ const COMPS=[['CL','Ligue des champions'],['FL1','Ligue 1'],['PL','Premier Leagu
   ['DED','Eredivisie'],['ELC','Championship'],['BSA','Brasileirão']];
 const DEFAULT_COMPS=['CL','FL1','PL','PD','SA','BL1'];
 const THROTTLE=6500, STALE=3*3600000;
+// fichiers principaux de football-data.co.uk : mmz4281/{saison}/{div}.csv
+const CSVSRC=[['T1','Turquie'],['G1','Grèce'],['B1','Belgique'],['SC0','Écosse'],
+  ['N1','Pays-Bas'],['P1','Portugal'],['E0','Angleterre'],['D1','Allemagne'],
+  ['I1','Italie'],['SP1','Espagne'],['F1','France']];
+const DEFAULT_CSV=['T1','G1','B1','SC0'];
 const compName=c=>(COMPS.find(x=>x[0]===c)||[c,c])[1];
+// compétitions réellement affichables : celles cochées à l'affichage ET téléchargées
+const shown=()=>{
+  const loaded=state.cfg.comps||[];
+  const sh=(state.cfg.show||[]).filter(c=>loaded.includes(c));
+  return sh.length?sh:loaded;
+};
 
 const $=id=>document.getElementById(id);
 const pct=x=>(x*100).toFixed(1)+' %';
@@ -525,19 +614,28 @@ const iso=d=>new Date(d).toISOString().slice(0,10);
 
 const state={results:[],fixtures:[],teams:new Map(),preds:{},model:null,
              sel:null,loading:false,view:'vMatches',cfg:{},
-             scRaw:{},scorersOk:null,avg:new Map()};
+             scRaw:{},scorersOk:null,avg:new Map(),
+             csvRows:[],alias:{},data:[],
+             elo:[],ealias:{},eloFit:null};
 
 /* ============================================================
    CHARGEMENT / SAUVEGARDE
    ============================================================ */
 function loadLocal(){
-  state.cfg=store.get(K.cfg,{comps:DEFAULT_COMPS,hl:250,reg:20,key:'',remember:false});
+  state.cfg=Object.assign({comps:DEFAULT_COMPS,show:null,hl:250,reg:20,key:'',remember:false,
+                           depth:2,guess:false}, store.get(K.cfg,{}));
+  if(!Array.isArray(state.cfg.show)) state.cfg.show=state.cfg.comps.slice();
   state.results=(store.get(K.res,[])||[]).map(a=>({t:a[0],home:a[1],away:a[2],hg:a[3],ag:a[4],c:a[5]}));
   state.fixtures=(store.get(K.fix,[])||[]).map(a=>({t:a[0],home:a[1],away:a[2],c:a[3]}));
   state.teams=new Map(Object.entries(store.get(K.team,{})));
   state.preds=store.get(K.preds,{})||{};
   state.scRaw=store.get(K.sc,{})||{};
   if(Object.keys(state.scRaw).length) state.scorersOk=true;
+  state.csvRows=(store.get(K.csv,[])||[]).map(a=>({t:a[0],home:a[1],away:a[2],hg:a[3],ag:a[4],c:a[5]}));
+  state.alias=store.get(K.alias,{})||{};
+  state.elo=store.get(K.elo,[])||[];
+  state.ealias=store.get(K.ealias,{})||{};
+  if(!Array.isArray(state.cfg.csv)) state.cfg.csv=DEFAULT_CSV.slice();
 }
 function saveData(){
   store.set(K.res,state.results.map(m=>[m.t,m.home,m.away,m.hg,m.ag,m.c]));
@@ -545,6 +643,10 @@ function saveData(){
   store.set(K.team,Object.fromEntries(state.teams));
   store.set(K.sc,state.scRaw);
 }
+const saveCsv=()=>store.set(K.csv,state.csvRows.map(m=>[m.t,m.home,m.away,m.hg,m.ag,m.c]));
+const saveAlias=()=>store.set(K.alias,state.alias);
+const saveElo=()=>store.set(K.elo,state.elo);
+const saveEalias=()=>store.set(K.ealias,state.ealias);
 const savePreds=()=>store.set(K.preds,state.preds);
 const saveCfg=()=>store.set(K.cfg,state.cfg);
 const meta=()=>store.get(K.meta,{loaded:0,tasks:{}});
@@ -595,6 +697,174 @@ function ingest(j,fallbackCode){
   return {res,fix};
 }
 
+/* ============================================================
+   RAPPROCHEMENT DES NOMS (football-data.co.uk -> football-data.org)
+   ============================================================ */
+const STOP = new Set(['fc','cf','sc','ac','as','sk','fk','bk','if','ff','sv','tsv','vfb','vfl',
+  'bsc','cd','ud','rc','rcd','ca','afc','ssc','us','ogc','losc','aj','rcd','club','calcio',
+  'de','di','du','la','le','les','of','the','and','y','e','i','spor','kulubu','kulubu',
+  'sportif','sport','sports','athletic','atletico','balompie','deportivo','real',
+  'ev','eV','fk','nk','hnk','gnk','sd','ss','ssd','asd','cp','cd','sl','sc']);
+
+// « real » et « atletico » sont trop distinctifs pour être ignorés : on les garde
+STOP.delete('real'); STOP.delete('atletico'); STOP.delete('athletic');
+
+function norm(s){
+  return String(s)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')      // accents
+    .toLowerCase()
+    .replace(/[''`.,()\/&-]/g,' ')
+    .replace(/\b(19|18|20)\d{2}\b/g,' ')                  // années dans les noms
+    .replace(/\b\d+\b/g,' ')                              // Schalke 04, Bayer 04
+    .replace(/\s+/g,' ').trim();
+}
+
+const TOKCACHE=new Map();
+function tokens(s){
+  if(TOKCACHE.has(s)) return TOKCACHE.get(s);
+  const raw=norm(s).split(' ').filter(t=>t.length>1);
+  let out=raw.filter(t=>!STOP.has(t));
+  if(!out.length) out=raw;                       // nom entièrement composé de mots vides
+  if(!out.length) out=[norm(s).replace(/ /g,'')].filter(Boolean);
+  TOKCACHE.set(s,out);
+  return out;
+}
+
+function lev(a,b){
+  const m=a.length,n=b.length;
+  if(!m||!n) return Math.max(m,n);
+  let prev=[...Array(n+1).keys()], cur=new Array(n+1);
+  for(let i=1;i<=m;i++){
+    cur[0]=i;
+    for(let j=1;j<=n;j++)
+      cur[j]=Math.min(prev[j]+1, cur[j-1]+1, prev[j-1]+(a[i-1]===b[j-1]?0:1));
+    [prev,cur]=[cur,prev];
+  }
+  return prev[n];
+}
+const sim=(a,b)=>1-lev(a,b)/Math.max(a.length,b.length);
+function commonPrefix(a,b){
+  let i=0; while(i<a.length&&i<b.length&&a[i]===b[i]) i++;
+  return i;
+}
+
+// « Man » pour Manchester, « Rennes » pour Rennais, « Olympiakos » pour Olympiacos
+function tokMatch(a,b){
+  if(a===b) return true;
+  const [s,l] = a.length<=b.length ? [a,b] : [b,a];
+  if(s.length>=3 && l.startsWith(s)) return true;
+  return commonPrefix(a,b)>=4 && sim(a,b)>=0.7;
+}
+
+function pair(a,b){
+  const A=tokens(a), B=tokens(b);
+  if(!A.length||!B.length) return {dice:0,cov:0,orphans:A};
+  const used=new Set(), hit=new Set();
+  let m=0;
+  for(let i=0;i<A.length;i++){
+    for(let j=0;j<B.length;j++){
+      if(used.has(j)) continue;
+      if(tokMatch(A[i],B[j])){ used.add(j); hit.add(i); m++; break; }
+    }
+  }
+  // mots du nom CSV restés sans correspondance : « madrid » dans
+  // « Ath Madrid » -> « Athletic Club » trahit une fusion douteuse
+  const orphans=A.filter((t,i)=>!hit.has(i));
+  return {dice:2*m/(A.length+B.length), cov:m/Math.min(A.length,B.length), orphans};
+}
+const score=(a,b)=>pair(a,b).dice;
+
+const SHOW_S=0.25, AUTO_MARGIN=0.2;
+
+// Le nom du CSV est presque toujours une version raccourcie de celui de l'API.
+// On se fie donc d'abord à la couverture : tous les mots du nom court
+// retrouvés dans le nom long. Le Dice ne sert qu'à départager.
+function classify(name, pool){
+  const rows=pool.map(p=>({p,...pair(name,p)}))
+                 .filter(x=>x.dice>=SHOW_S||x.cov>=1)
+                 .sort((x,y)=>(y.cov-x.cov)||(y.dice-x.dice));
+  if(!rows.length) return {name, kind:'none', cands:[]};
+  const cands=rows.slice(0,6);
+  // un mot distinctif abandonné interdit la fusion automatique
+  const full=rows.filter(x=>x.cov>=1 && !x.orphans.some(t=>t.length>=5));
+  if(full.length===1 || (full.length>1 && full[0].dice-full[1].dice>=AUTO_MARGIN))
+    return {name, kind:'auto', match:full[0].p, s:full[0].dice, cands};
+  return {name, kind:'ask', match:rows[0].p, s:rows[0].dice, cands};
+}
+
+function csvTeams(){
+  const set=new Set();
+  for(const r of state.csvRows){ set.add(r.home); set.add(r.away); }
+  return [...set];
+}
+function apiTeams(){
+  return [...new Set(state.results.flatMap(r=>[r.home,r.away]))].sort();
+}
+// alias absent = équipe en attente ; alias null = club à part entière
+function pending(){ return csvTeams().filter(n=>!(n in state.alias)); }
+
+function autoAlias(){
+  const pool=apiTeams(); let n=0;
+  for(const name of pending()){
+    const r=classify(name,pool);
+    if(r.kind==='auto'){ state.alias[name]=r.match; n++; }
+  }
+  if(n) saveAlias();
+  return n;
+}
+
+// résultats effectivement donnés au modèle : API + CSV rattachés
+function buildData(){
+  const rows=state.results.slice();
+  const key=new Set(rows.map(m=>m.t+'|'+m.home+'|'+m.away));
+  for(const r of state.csvRows){
+    if(!(r.home in state.alias)||!(r.away in state.alias)) continue;   // en attente
+    const h=state.alias[r.home]||r.home, a=state.alias[r.away]||r.away;
+    const k=r.t+'|'+h+'|'+a;
+    if(key.has(k)) continue;                                           // déjà via l'API
+    key.add(k);
+    rows.push({t:r.t,home:h,away:a,hg:r.hg,ag:r.ag,c:r.c});
+  }
+  state.data=rows;
+}
+
+/* ---------- lecture des CSV ---------- */
+function splitLine(l){
+  const out=[]; let cur='',q=false;
+  for(let i=0;i<l.length;i++){
+    const c=l[i];
+    if(c==='"'){ if(q&&l[i+1]==='"'){cur+='"';i++;} else q=!q; }
+    else if(c===','&&!q){ out.push(cur); cur=''; }
+    else cur+=c;
+  }
+  out.push(cur); return out.map(x=>x.trim());
+}
+function csvDate(v){
+  let m=String(v).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if(m){ let y=+m[3]; if(y<100) y+=y<70?2000:1900; return Date.UTC(y,+m[2]-1,+m[1]); }
+  m=String(v).trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m) return Date.UTC(+m[1],+m[2]-1,+m[3]);
+  return null;
+}
+function parseCSV(text,code){
+  const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<2) return [];
+  const head=splitLine(lines[0]).map(h=>h.toLowerCase().replace(/[^a-z0-9]/g,''));
+  const col=(...n)=>{ for(const x of n){ const i=head.indexOf(x); if(i>=0) return i; } return -1; };
+  const ci={d:col('date'),h:col('hometeam','home'),a:col('awayteam','away'),
+            hg:col('fthg','hg'),ag:col('ftag','ag')};
+  if(ci.h<0||ci.a<0||ci.hg<0||ci.ag<0) return [];
+  const out=[];
+  for(let i=1;i<lines.length;i++){
+    const c=splitLine(lines[i]);
+    const hg=parseInt(c[ci.hg],10), ag=parseInt(c[ci.ag],10);
+    const t=ci.d>=0?csvDate(c[ci.d]):null;
+    if(!c[ci.h]||!c[ci.a]||!isFinite(hg)||!isFinite(ag)||!t) continue;
+    out.push({t,home:c[ci.h],away:c[ci.a],hg,ag,c:'csv:'+code});
+  }
+  return out;
+}
+
 function ingestScorers(j,code){
   state.scRaw[code]=(j.scorers||[]).map(x=>({
     t:(x.team&&x.team.name)||'', n:(x.player&&x.player.name)||'',
@@ -616,7 +886,7 @@ function scorersFor(team){
 
 function computeAvg(){
   const a=new Map(), cut=Date.now()-400*DAY;
-  for(const r of state.results){
+  for(const r of state.data){
     if(r.t<cut) continue;
     for(const [nm,g] of [[r.home,r.hg],[r.away,r.ag]]){
       const c=a.get(nm)||{g:0,n:0}; c.g+=g; c.n++; a.set(nm,c);
@@ -653,14 +923,18 @@ async function load(hard){
   const bar=$('loadProg').querySelector('i');
 
   const codes=state.cfg.comps;
-  const cur=season(), prev=cur-1;
+  const cur=season();
+  const depth=Math.max(2,Math.min(4,+state.cfg.depth||2));
   const mt=meta();
   if(hard){ state.results=[]; state.fixtures=[]; mt.tasks={}; }
 
   // la saison écoulée ne bouge plus : inutile de la retélécharger
   const tasks=[['fix','',0]];
-  for(const c of codes) tasks.push(['m',c,cur]);
-  for(const c of codes) if(!mt.tasks[c+'|'+prev]) tasks.push(['m',c,prev]);
+  for(let i=0;i<depth;i++){
+    const s2=cur-i;
+    for(const c of codes)
+      if(i===0||!mt.tasks[c+'|'+s2]) tasks.push(['m',c,s2]);
+  }
   for(const c of codes) tasks.push(['sc',c,cur]);
 
   let done=0;
@@ -689,6 +963,7 @@ async function load(hard){
         }catch(e){
           if(e.rate&&tries++<3){ step("Limite de l'API atteinte, pause…"); await sleep(20000); continue; }
           if(kind==='sc'){ if(state.scorersOk===null) state.scorersOk=false; break; }
+          if(kind==='m'&&s!==cur&&e.fatal) break;   // saison ancienne hors plan : on continue
           if(e.fatal) throw e;
           break;
         }
@@ -708,6 +983,239 @@ async function load(hard){
   refresh();
 }
 
+async function loadCsv(){
+  const sel=[...document.querySelectorAll('#csvSrc input:checked')].map(i=>i.value);
+  if(!sel.length){ $('csvErr').innerHTML='<p class="flag">Coche au moins un championnat.</p>'; return; }
+  $('csvGo').disabled=true; $('csvErr').innerHTML='';
+  $('csvProg').classList.remove('hidden'); $('csvMsg').classList.remove('hidden');
+  const bar=$('csvProg').querySelector('i');
+
+  const cur=season(), depth=Math.max(2,Math.min(4,+state.cfg.depth||2));
+  const seasons=[];
+  for(let i=0;i<depth;i++){
+    const y=cur-i;
+    seasons.push(String(y%100).padStart(2,'0')+String((y+1)%100).padStart(2,'0'));
+  }
+  const jobs=[];
+  for(const d of sel) for(const ss of seasons) jobs.push([d,ss]);
+
+  const seen=new Set(state.csvRows.map(r=>r.t+'|'+r.home+'|'+r.away));
+  let done=0, added=0, failed=0;
+  for(const [d,ss] of jobs){
+    $('csvMsg').textContent=`${(CSVSRC.find(x=>x[0]===d)||[d,d])[1]} ${ss} — ${done+1}/${jobs.length}`;
+    bar.style.width=(done/jobs.length*100)+'%';
+    try{
+      const url=`https://www.football-data.co.uk/mmz4281/${ss}/${d}.csv`;
+      const r=await fetch('/api/fd?csv='+encodeURIComponent(url));
+      if(!r.ok) throw new Error('code '+r.status);
+      const rows=parseCSV(await r.text(),d);
+      for(const row of rows){
+        const k=row.t+'|'+row.home+'|'+row.away;
+        if(seen.has(k)) continue;
+        seen.add(k); state.csvRows.push(row); added++;
+      }
+    }catch(_){ failed++; }
+    done++;
+  }
+  $('csvProg').classList.add('hidden'); $('csvMsg').classList.add('hidden');
+  $('csvGo').disabled=false;
+  saveCsv();
+  const auto=autoAlias();
+  $('csvErr').innerHTML=`<p class="note">${added} matchs ajoutés`+
+    (failed?`, ${failed} fichier(s) indisponible(s)`:'')+
+    `. ${auto} équipe(s) rattachée(s) automatiquement.</p>`;
+  refresh();
+}
+
+function renderAlias(){
+  if(!state.csvRows.length){ $('aliasBox').innerHTML=''; return; }
+  const pool=apiTeams();
+  const wait=pending();
+  const linked=Object.entries(state.alias).filter(([,v])=>v);
+  const solo=Object.entries(state.alias).filter(([,v])=>!v).length;
+
+  let html='<hr class="rule">';
+  if(wait.length){
+    html+=`<h2>À confirmer (${wait.length})</h2>
+      <p class="note">Tant qu'une équipe est là, ses matchs ne sont pas donnés au modèle.
+        Choisis le club correspondant, ou « club distinct » si l'API ne le connaît pas.</p>`;
+    for(const n of wait.slice(0,40)){
+      const r=classify(n,pool);
+      const opts=r.cands.map(c=>
+        `<option value="${esc(c.p)}">${esc(c.p)} · ${(c.dice*100).toFixed(0)} %</option>`).join('');
+      const rest=pool.filter(p=>!r.cands.some(c=>c.p===p))
+        .map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
+      html+=`<div class="alias"><b>${esc(n)}</b>
+        <select data-n="${esc(n)}">
+          <option value="">— choisir —</option>
+          ${opts}
+          <option value="__solo__">— club distinct, garder tel quel —</option>
+          ${rest}
+        </select></div>`;
+    }
+    if(wait.length>40) html+=`<p class="note">…et ${wait.length-40} autres, affichées après celles-ci.</p>`;
+  }else{
+    html+=`<p class="note">Toutes les équipes des CSV sont rattachées.</p>`;
+  }
+  html+=`<details><summary>Rattachements effectués (${linked.length} fusions, ${solo} clubs distincts)</summary>`;
+  for(const [k,v] of linked.slice(0,60))
+    html+=`<div class="done"><span>${esc(k)} → <b>${esc(v)}</b></span>
+      <button data-undo="${esc(k)}">Détacher</button></div>`;
+  html+='</details>';
+  $('aliasBox').innerHTML=html;
+
+  $('aliasBox').querySelectorAll('select').forEach(sl=>sl.onchange=()=>{
+    const n=sl.dataset.n, v=sl.value;
+    if(!v) return;
+    state.alias[n]= v==='__solo__' ? null : v;
+    saveAlias(); refresh();
+  });
+  $('aliasBox').querySelectorAll('button[data-undo]').forEach(b=>b.onclick=()=>{
+    delete state.alias[b.dataset.undo]; saveAlias(); refresh();
+  });
+}
+
+/* ============================================================
+   CLUB ELO — force de référence de tous les clubs européens
+   ============================================================ */
+async function loadElo(){
+  $('eloGo').disabled=true; $('eloProg').classList.remove('hidden');
+  $('eloMsg').textContent='Téléchargement…';
+  try{
+    const url='http://api.clubelo.com/'+iso(Date.now());
+    const r=await fetch('/api/fd?elo='+encodeURIComponent(url));
+    if(!r.ok) throw new Error('code '+r.status);
+    const lines=(await r.text()).split(/\r?\n/).filter(l=>l.trim());
+    const head=splitLine(lines[0]).map(h=>h.toLowerCase());
+    const ic=head.indexOf('club'), ie=head.indexOf('elo'),
+          ico=head.indexOf('country'), il=head.indexOf('level');
+    if(ic<0||ie<0) throw new Error('format inattendu');
+    const out=[];
+    for(let i=1;i<lines.length;i++){
+      const c=splitLine(lines[i]);
+      const e=parseFloat(c[ie]);
+      if(!c[ic]||!isFinite(e)) continue;
+      out.push({club:c[ic], elo:Math.round(e*10)/10,
+                pays:ico>=0?c[ico]:'', niv:il>=0?+c[il]||0:0});
+    }
+    if(!out.length) throw new Error('aucune note lue');
+    state.elo=out; saveElo();
+    refresh();
+    const done=Object.values(state.ealias).filter(Boolean).length;
+    $('eloMsg').textContent=`${out.length} clubs notés, ${done} rattachés automatiquement.`;
+  }catch(e){
+    $('eloMsg').innerHTML=`<span style="color:var(--warn)">Échec : ${esc(e.message)}. `+
+      `Vérifie que api/fd.js est bien en version 3.0.</span>`;
+  }
+  $('eloProg').classList.add('hidden'); $('eloGo').disabled=false;
+}
+
+// équipes que le modèle doit pouvoir noter : celles vues + celles au calendrier
+function allTeams(){
+  const s=new Set(state.data.flatMap(r=>[r.home,r.away]));
+  for(const f of state.fixtures){ s.add(f.home); s.add(f.away); }
+  return [...s];
+}
+function eloPending(){ return allTeams().filter(t=>!(t in state.ealias)); }
+
+function autoEalias(){
+  if(!state.elo.length) return 0;
+  const clubs=state.elo.map(e=>e.club);
+  let n=0;
+  for(const t of eloPending()){
+    const r=classify2(clubs,t);
+    if(r.kind==='auto'){ state.ealias[t]=r.match; n++; }
+  }
+  if(n) saveEalias();
+  return n;
+}
+// même mesure, mais on cherche le nom Elo (court) qui décrit l'équipe (nom long)
+function classify2(clubs,team){
+  const rows=clubs.map(c=>({p:c,...pair(c,team)}))
+                  .filter(x=>x.dice>=SHOW_S||x.cov>=1)
+                  .sort((x,y)=>(y.cov-x.cov)||(y.dice-x.dice));
+  if(!rows.length) return {kind:'none',cands:[]};
+  const full=rows.filter(x=>x.cov>=1 && !x.orphans.some(t=>t.length>=5));
+  if(full.length===1||(full.length>1&&full[0].dice-full[1].dice>=AUTO_MARGIN))
+    return {kind:'auto',match:full[0].p,cands:rows.slice(0,6)};
+  return {kind:'ask',match:rows[0].p,cands:rows.slice(0,6)};
+}
+function eloOf(team){
+  const c=state.ealias[team];
+  if(!c) return null;
+  const e=state.elo.find(x=>x.club===c);
+  return e?e.elo:null;
+}
+
+// régression des forces ajustées sur Elo, puis a priori pour toutes les équipes
+function buildPriors(m0){
+  if(!state.elo.length) return null;
+  const xs=[],ya=[],yd=[];
+  m0.teams.forEach((t,i)=>{
+    const e=eloOf(t);
+    if(e===null||m0.seen[i]<12) return;
+    xs.push((e-1500)/100); ya.push(m0.att[i]); yd.push(m0.def[i]);
+  });
+  if(xs.length<12){ state.eloFit=null; return null; }
+  const lin=(x,y)=>{
+    const n=x.length;
+    const mx=x.reduce((a,b)=>a+b,0)/n, my=y.reduce((a,b)=>a+b,0)/n;
+    let sxy=0,sxx=0,syy=0;
+    for(let i=0;i<n;i++){ sxy+=(x[i]-mx)*(y[i]-my); sxx+=(x[i]-mx)**2; syy+=(y[i]-my)**2; }
+    if(sxx<=0||syy<=0) return null;
+    return {a:my-(sxy/sxx)*mx, b:sxy/sxx, r:sxy/Math.sqrt(sxx*syy)};
+  };
+  const ra=lin(xs,ya), rd=lin(xs,yd);
+  if(!ra||!rd) return null;
+  state.eloFit={n:xs.length, rAtt:ra.r, rDef:rd.r};
+  // lien trop faible : mieux vaut ne pas ancrer que d'ancrer n'importe comment
+  if(Math.abs(ra.r)<0.3){ state.eloFit.weak=true; return null; }
+  const prior=new Map();
+  for(const t of allTeams()){
+    const e=eloOf(t); if(e===null) continue;
+    const z=(e-1500)/100;
+    prior.set(t,[ra.a+ra.b*z, rd.a+rd.b*z]);
+  }
+  return prior;
+}
+
+function renderElo(){
+  if(!state.elo.length){ $('eloBox').innerHTML=''; return; }
+  const wait=eloPending(), linked=Object.entries(state.ealias).filter(([,v])=>v).length;
+  let html='<hr class="rule">';
+  if(state.eloFit)
+    html+=`<p class="note">Correspondance Elo → force mesurée sur ${state.eloFit.n} équipes bien
+      connues : corrélation ${state.eloFit.rAtt.toFixed(2)} en attaque,
+      ${Math.abs(state.eloFit.rDef).toFixed(2)} en défense.`+
+      (state.eloFit.weak
+        ? ' Trop faible pour être fiable : l\'ancrage est désactivé.'
+        : ' Plus c\'est proche de 1, plus l\'ancrage est solide.')+'</p>';
+  else if(state.elo.length)
+    html+=`<p class="note">Pas encore assez d'équipes rattachées pour calibrer la correspondance
+      Elo → force. Il en faut une douzaine avec un historique fourni.</p>`;
+  html+=`<p class="note">${linked} équipes rattachées à une note Elo, ${wait.length} en attente.</p>`;
+  if(wait.length){
+    const clubs=state.elo.map(e=>e.club);
+    for(const t of wait.slice(0,25)){
+      const r=classify2(clubs,t);
+      const opts=(r.cands||[]).map(c=>{
+        const e=state.elo.find(x=>x.club===c.p);
+        return `<option value="${esc(c.p)}">${esc(c.p)} · ${e?e.elo:''} ${esc(e?e.pays:'')}</option>`;
+      }).join('');
+      html+=`<div class="alias"><b>${esc(t)}</b>
+        <select data-t="${esc(t)}"><option value="">— choisir —</option>${opts}
+        <option value="__none__">— pas de note Elo —</option></select></div>`;
+    }
+    if(wait.length>25) html+=`<p class="note">…et ${wait.length-25} autres.</p>`;
+  }
+  $('eloBox').innerHTML=html;
+  $('eloBox').querySelectorAll('select').forEach(sl=>sl.onchange=()=>{
+    if(!sl.value) return;
+    state.ealias[sl.dataset.t]= sl.value==='__none__' ? null : sl.value;
+    saveEalias(); refresh();
+  });
+}
+
 /* ============================================================
    PRONOSTICS ENREGISTRÉS
    ============================================================ */
@@ -715,13 +1223,15 @@ const pkey=f=>f.home+'|'+f.away+'|'+iso(f.t).slice(0,7);
 
 function recordPreds(){
   const m=state.model; if(!m) return;
+  const vis=new Set(shown());
   let changed=false;
   for(const f of state.fixtures){
+    if(!vis.has(f.c)) continue;                      // hors des compétitions affichées
     if(f.t<=Date.now()) continue;                    // figé au coup d'envoi
     const p=predict(m,f.home,f.away,false);
     if(!p) continue;
     const c=confidence(m,f.home,f.away);
-    if(!c||!c.link) continue;                        // équipes non reliées : rien à enregistrer
+    if(!c||!c.link||(c.unknown&&c.unknown.length)) continue;                        // équipes non reliées : rien à enregistrer
     const k=pkey(f);
     const old=state.preds[k];
     if(old&&old.res) continue;
@@ -735,7 +1245,7 @@ function recordPreds(){
 
 function resolvePreds(){
   const byPair=new Map();
-  for(const r of state.results){
+  for(const r of state.data){
     const k=r.home+'|'+r.away;
     if(!byPair.has(k)) byPair.set(k,[]);
     byPair.get(k).push(r);
@@ -761,17 +1271,46 @@ const img=n=>{ const c=crest(n);
   return c?`<img src="${esc(c)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`
           :'<img alt="" style="visibility:hidden">'; };
 
+function missingIn(m,h,a){
+  return [h,a].filter(n=>m.idx.get(n)===undefined);
+}
+
+// variante de predict() qui accepte une équipe absente du modèle :
+// elle est alors ramenée à une équipe moyenne (attaque et défense nulles)
+function predictAny(m,h,a,neutral){
+  const ih=m.idx.get(h), ia=m.idx.get(a);
+  if(ih!==undefined&&ia!==undefined) return predict(m,h,a,neutral);
+  if(!state.cfg.guess) return null;
+  const attH=ih===undefined?0:m.att[ih], defH=ih===undefined?0:m.def[ih];
+  const attA=ia===undefined?0:m.att[ia], defA=ia===undefined?0:m.def[ia];
+  const lh=Math.exp(m.mu+attH-defA+(neutral?0:m.adv));
+  const la=Math.exp(m.mu+attA-defH);
+  const g=grid(lh,la,m.rho);
+  return {lh,la,grid:g,...markets(g)};
+}
+
 function confidence(m,h,a){
   const ih=m.idx.get(h), ia=m.idx.get(a);
-  if(ih===undefined||ia===undefined) return null;
-  const few=Math.min(m.seen[ih],m.seen[ia]), link=m.comp[ih]===m.comp[ia];
+  if(ih===undefined||ia===undefined){
+    const miss=missingIn(m,h,a);
+    return {few:0,link:false,unknown:miss,grade:'?',
+      txt:`aucun match pour ${miss.join(' ni ')} dans les données chargées`};
+  }
+  const few=Math.min(m.seen[ih],m.seen[ia]);
+  // Elo place toutes les équipes sur une échelle commune : l'absence de
+  // chaîne de matchs cesse alors d'être rédhibitoire
+  const anchored=m.primed&&m.primed.has(h)&&m.primed.has(a);
+  const link=m.comp[ih]===m.comp[ia]||anchored;
+  if(few<1&&anchored)
+    return {few,link:true,elo:true,grade:'E',
+      txt:'aucun match joué — force estimée depuis Elo seule'};
   const g=!link?'D':few>=25?'A':few>=12?'B':few>=6?'C':'D';
-  return {few,link,grade:g,
+  return {few,link,elo:anchored,grade:g,
     txt:!link?'équipes non reliées — pronostic non valide'
       :few>=25?`bon historique (${few.toFixed(0)} matchs)`
       :few>=12?`historique correct (${few.toFixed(0)} matchs)`
       :few>=6?`historique court (${few.toFixed(0)} matchs)`
-      :`très peu de données (${few.toFixed(0)} matchs)`};
+      :`peu de matchs (${few.toFixed(0)})${anchored?', ancré sur Elo':''}`};
 }
 
 function dayLabel(t){
@@ -787,7 +1326,7 @@ const hhmm=t=>new Date(t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-d
 
 function card(f){
   const m=state.model;
-  const p=m?predict(m,f.home,f.away,false):null;
+  const p=m?predictAny(m,f.home,f.away,false):null;
   const conf=m?confidence(m,f.home,f.away):null;
   const badge=conf?`<span class="badge ${conf.grade.toLowerCase()}">${conf.grade}</span>`:'';
   const line=(nm,prob,fav)=>
@@ -798,19 +1337,19 @@ function card(f){
     ${line(f.home,p?pct(p.home):'—',!!p&&p.home>=p.away)}
     ${line(f.away,p?pct(p.away):'—',!!p&&p.away>p.home)}
     ${p?`<div class="minibar"><i class="h" style="flex:${p.home}"></i><i class="d" style="flex:${p.draw}"></i><i class="a" style="flex:${p.away}"></i></div>`:''}
-    <div class="conf">${p&&conf?esc(conf.txt):'en attente de données'}</div>
+    <div class="conf">${conf?esc(conf.txt):'en attente de données'}</div>
   </button>`;
 }
 
 function renderList(){
-  const codes=new Set(state.cfg.comps);
+  const codes=new Set(shown());
   const now=Date.now();
   const items=state.fixtures
     .filter(f=>codes.has(f.c)&&f.t>now-2*3600000)
     .sort((a,b)=>a.t-b.t);
 
   if(!items.length){
-    $('list').innerHTML=`<p class="empty">Aucun match à venir dans les compétitions choisies.<br>
+    $('list').innerHTML=`<p class="empty">Aucun match à venir dans les compétitions affichées.<br>
       Les matchs joués basculent dans l'onglet Historique.</p>`;
     return;
   }
@@ -926,8 +1465,19 @@ function renderDetail(){
     $('recoNote').textContent='';
     return;
   }
-  const p=predict(m,h,a,$('neutral').checked);
-  if(!p) return;
+  const p=predictAny(m,h,a,$('neutral').checked);
+  if(!p){
+    const miss=missingIn(m,h,a);
+    $('xg').textContent='';
+    ['grid','bar','barkey','markets','topScores','reco'].forEach(id=>$(id).innerHTML='');
+    $('recoNote').textContent='';
+    $('mismatch').innerHTML=`Aucun match de <b>${esc(miss.join('</b> ni <b>'))}</b> ne figure dans les
+      données chargées, donc rien à calculer. Trois solutions : cocher son championnat dans Réglages
+      s'il y figure, augmenter la profondeur d'historique pour récupérer ses campagnes européennes
+      passées, ou activer l'estimation des équipes inconnues.`;
+    $('mismatch').classList.remove('hidden');
+    return;
+  }
 
   $('xg').innerHTML=`Buts attendus <b>${p.lh.toFixed(2)}</b> – <b>${p.la.toFixed(2)}</b>`;
   $('axH').textContent=`buts de ${h} ↓`;
@@ -948,7 +1498,9 @@ function renderDetail(){
   renderReco(h,a,p);
 
   const c=confidence(m,h,a), warn=[];
-  if(c&&!c.link) warn.push(`Aucune chaîne de matchs ne relie <b>${esc(h)}</b> à <b>${esc(a)}</b> dans les données chargées : leurs forces sont mesurées sur deux échelles séparées, ce pronostic ne veut rien dire. Coche la Ligue des champions, c'est elle qui relie les championnats entre eux.`);
+  if(c&&c.unknown&&c.unknown.length) warn.push(`<b>${esc(c.unknown.join('</b> et <b>'))}</b> n'a aucun match dans les données chargées : le modèle le remplace par une équipe moyenne du lot. Comme ce lot est fait de grands championnats, l'écart réel est probablement plus marqué que ce qui est affiché. Ce pronostic n'entre pas dans l'historique.`);
+  else if(c&&c.elo&&c.few<1) warn.push(`Aucun match de <b>${esc(c.few<1?(m.seen[m.idx.get(h)]<1?h:a):'')}</b> ne figure dans les données : sa force vient uniquement de sa note Club Elo. C'est bien mieux qu'une moyenne, mais moins fiable qu'un historique de matchs.`);
+  else if(c&&!c.link) warn.push(`Aucune chaîne de matchs ne relie <b>${esc(h)}</b> à <b>${esc(a)}</b> dans les données chargées : leurs forces sont mesurées sur deux échelles séparées, ce pronostic ne veut rien dire. Coche la Ligue des champions, c'est elle qui relie les championnats entre eux.`);
   else if(c&&c.few<6) warn.push(`L'équipe la moins vue n'a que ${c.few.toFixed(1)} matchs pondérés. Le modèle la ramène vers la moyenne, donc l'écart affiché est sous-estimé — c'est volontaire.`);
   $('mismatch').innerHTML=warn.join('');
   $('mismatch').classList.toggle('hidden',!warn.length);
@@ -1005,15 +1557,18 @@ function renderRatings(){
 
 function renderStatus(){
   const m=state.model, mt=meta();
-  if(!m){ $('status').textContent=state.results.length?'Données insuffisantes.':'Aucune donnée. Ouvre Réglages.'; }
+  if(!m){ $('status').textContent=state.data.length?'Données insuffisantes.':'Aucune donnée. Ouvre Réglages.'; }
   else{
     const age=mt.loaded?Math.round((Date.now()-mt.loaded)/60000):null;
     const ago=age===null?'':age<60?` · mis à jour il y a ${age} min`:` · mis à jour il y a ${Math.round(age/60)} h`;
     $('status').textContent=`${m.n} matchs · ${m.teams.length} équipes${ago}`;
   }
   $('setStatus').textContent=m?`${m.n} matchs en mémoire, ${m.teams.length} équipes.`:'Aucune donnée chargée.';
+  const wait=state.csvRows.length?pending().length:0;
   $('cacheNote').textContent=STORAGE_OK
-    ? `${state.results.length} résultats et ${Object.keys(state.preds).length} pronostics gardés sur cet appareil. Rien n'est envoyé ailleurs.`
+    ? `${state.results.length} résultats via l'API, ${state.csvRows.length} via les CSV`+
+      (wait?` (dont ${wait} équipes non rattachées, écartées du modèle)`:'')+
+      `, ${Object.keys(state.preds).length} pronostics. Rien n'est envoyé ailleurs.`
     : "Ce navigateur refuse le stockage local : rien ne sera gardé entre deux visites. C'est le cas dans l'aperçu de l'app Claude, pas sur ton site déployé.";
   $('keyNote').innerHTML=(state.cfg.key||'').trim()
     ? "Clé utilisée en direct depuis le navigateur. Si le proxy est déployé, vide ce champ : c'est plus sûr."
@@ -1030,12 +1585,26 @@ function fillSelects(){
 }
 
 function refresh(){
-  state.model = state.results.length>=10
-    ? fit(state.results,{halfLife:state.cfg.hl||250,reg:state.cfg.reg||20}) : null;
+  buildData();
+  if(state.elo.length) autoEalias();     // les nouvelles équipes sont rattachées ici
+  const o={halfLife:state.cfg.hl||250,reg:state.cfg.reg||20};
+  let m=state.data.length>=10 ? fit(state.data,o) : null;
+  if(m){
+    // 2e passe : on ancre les forces sur Elo et on ajoute les équipes
+    // qui n'ont aucun match mais figurent au calendrier
+    const prior=buildPriors(m);
+    if(prior){
+      const known=new Set(m.teams);
+      const ghosts=[...new Set(state.fixtures.flatMap(f=>[f.home,f.away]))]
+        .filter(t=>!known.has(t)&&prior.has(t));
+      m=fit(state.data,{...o,prior,extraTeams:ghosts});
+    }
+  }
+  state.model=m;
   computeAvg();
   resolvePreds();
   recordPreds();
-  fillSelects(); renderStatus(); renderList(); renderRatings(); renderHistory();
+  fillSelects(); renderStatus(); renderList(); renderRatings(); renderHistory(); renderAlias(); renderElo();
   if(state.view==='vDetail') renderDetail();
 }
 
@@ -1052,11 +1621,11 @@ function show(v){
    FIABILITÉ
    ============================================================ */
 $('runBt').onclick=async()=>{
-  if(state.results.length<80){ $('btOut').innerHTML='<p class="flag">Il faut plus de matchs pour un test honnête.</p>'; return; }
+  if(state.data.length<80){ $('btOut').innerHTML='<p class="flag">Il faut plus de matchs pour un test honnête.</p>'; return; }
   $('runBt').disabled=true; $('runTune').disabled=true;
   $('btProg').classList.remove('hidden');
   const bar=$('btProg').querySelector('i');
-  const r=await backtest(state.results,{halfLife:state.cfg.hl,reg:state.cfg.reg},f=>bar.style.width=(f*100)+'%');
+  const r=await backtest(state.data,{halfLife:state.cfg.hl,reg:state.cfg.reg},f=>bar.style.width=(f*100)+'%');
   $('btProg').classList.add('hidden'); bar.style.width='0';
   $('runBt').disabled=false; $('runTune').disabled=false;
   if(!r){ $('btOut').innerHTML='<p class="flag">Pas assez de matchs.</p>'; return; }
@@ -1078,13 +1647,13 @@ $('runBt').onclick=async()=>{
 };
 
 $('runTune').onclick=async()=>{
-  if(state.results.length<80) return;
+  if(state.data.length<80) return;
   $('runBt').disabled=true; $('runTune').disabled=true;
   $('btProg').classList.remove('hidden');
   const bar=$('btProg').querySelector('i'), gv=[5,10,20,40,80], rows=[];
   let best=null;
   for(let i=0;i<gv.length;i++){
-    const r=await backtest(state.results,{halfLife:state.cfg.hl,reg:gv[i],fitRho:false},
+    const r=await backtest(state.data,{halfLife:state.cfg.hl,reg:gv[i],fitRho:false},
       f=>bar.style.width=(((i+f)/gv.length)*100)+'%');
     if(!r) break;
     rows.push({reg:gv[i],ll:r.logloss});
@@ -1110,9 +1679,10 @@ $('reload').onclick=()=>load(false);
 $('hard').onclick=()=>load(true);
 $('wipe').onclick=()=>{
   if(!confirm("Effacer les matchs en cache et tout l'historique des pronostics ?")) return;
-  [K.res,K.fix,K.team,K.meta,K.preds,K.sc].forEach(store.del);
+  [K.res,K.fix,K.team,K.meta,K.preds,K.sc,K.csv,K.alias,K.elo,K.ealias].forEach(store.del);
   state.results=[]; state.fixtures=[]; state.teams=new Map(); state.preds={};
-  state.scRaw={}; state.scorersOk=null;
+  state.scRaw={}; state.scorersOk=null; state.csvRows=[]; state.alias={};
+  state.elo=[]; state.ealias={}; state.eloFit=null;
   refresh();
 };
 $('key').oninput=()=>{
@@ -1127,6 +1697,8 @@ $('remember').onchange=()=>{
 ['hl','reg'].forEach(id=>$(id).onchange=()=>{
   state.cfg[id]=+$(id).value||(id==='hl'?250:20); saveCfg(); refresh();
 });
+$('depth').onchange=()=>{ state.cfg.depth=+$('depth').value; saveCfg(); };
+$('guess').onchange=()=>{ state.cfg.guess=$('guess').checked; saveCfg(); refresh(); };
 ['home','away','neutral'].forEach(id=>$(id).addEventListener('change',()=>{
   state.sel={home:$('home').value,away:$('away').value,it:null}; renderDetail();
 }));
@@ -1135,16 +1707,51 @@ $('remember').onchange=()=>{
    DÉMARRAGE
    ============================================================ */
 loadLocal();
-$('comps').innerHTML=COMPS.map(([c,n])=>
-  `<label><input type="checkbox" value="${c}"${state.cfg.comps.includes(c)?' checked':''}>${n}</label>`).join('');
-$('comps').querySelectorAll('input').forEach(i=>i.onchange=()=>{
-  state.cfg.comps=[...$('comps').querySelectorAll('input:checked')].map(x=>x.value);
-  saveCfg(); renderList();
+function renderComps(){
+  $('comps').innerHTML=COMPS.map(([c,n])=>
+    `<label><input type="checkbox" value="${c}"${state.cfg.comps.includes(c)?' checked':''}>${n}</label>`).join('');
+  $('comps').querySelectorAll('input').forEach(i=>i.onchange=()=>{
+    state.cfg.comps=[...$('comps').querySelectorAll('input:checked')].map(x=>x.value);
+    state.cfg.show=(state.cfg.show||[]).filter(c=>state.cfg.comps.includes(c));
+    if(!state.cfg.show.length) state.cfg.show=state.cfg.comps.slice();
+    saveCfg(); renderComps(); renderList();
+  });
+  $('showComps').innerHTML=COMPS.filter(([c])=>state.cfg.comps.includes(c)).map(([c,n])=>
+    `<label><input type="checkbox" value="${c}"${shown().includes(c)?' checked':''}>${n}</label>`).join('')
+    || '<span class="note">Coche d\'abord une compétition ci-dessous.</span>';
+  $('showComps').querySelectorAll('input').forEach(i=>i.onchange=()=>{
+    const sel=[...$('showComps').querySelectorAll('input:checked')].map(x=>x.value);
+    state.cfg.show=sel.length?sel:state.cfg.comps.slice();
+    saveCfg(); renderComps(); refresh();
+  });
+}
+renderComps();
+
+$('csvSrc').innerHTML=CSVSRC.map(([c,n])=>
+  `<label><input type="checkbox" value="${c}"${state.cfg.csv.includes(c)?' checked':''}>${n}</label>`).join('');
+$('csvSrc').querySelectorAll('input').forEach(i=>i.onchange=()=>{
+  state.cfg.csv=[...$('csvSrc').querySelectorAll('input:checked')].map(x=>x.value); saveCfg();
 });
+$('csvGo').onclick=loadCsv;
+$('eloGo').onclick=loadElo;
+
+$('presetCL').onclick=()=>{
+  state.cfg.comps=COMPS.map(x=>x[0]);
+  state.cfg.show=['CL'];
+  state.cfg.depth=4;
+  saveCfg();
+  $('depth').value='4';
+  renderComps(); renderList();
+  $('loadErr').innerHTML='<p class="note">Tout est coché côté données, seule la Ligue des champions '+
+    'sera affichée. Lance « Tout recharger » : compte une dizaine de minutes, la limite de l\'API '+
+    'gratuite est de 10 requêtes par minute.</p>';
+};
 $('hl').value=state.cfg.hl||250;
 $('reg').value=state.cfg.reg||20;
 $('key').value=state.cfg.key||'';
 $('remember').checked=!!state.cfg.remember;
+$('depth').value=String(state.cfg.depth||2);
+$('guess').checked=!!state.cfg.guess;
 refresh();
 
 const mt0=meta();
