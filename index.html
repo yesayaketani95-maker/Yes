@@ -256,6 +256,14 @@ ul.why .up{color:var(--good)} ul.why .dn{color:var(--warn)}
       </details>
 
       <details>
+        <summary>Tous les buteurs connus</summary>
+        <div id="scoList"></div>
+        <p class="note" style="margin-top:10px">Seuls les joueurs ayant déjà marqué dans une
+          compétition chargée apparaissent. Un attaquant encore muet est absent, et l'API gratuite
+          ne donne ni compositions ni blessures.</p>
+      </details>
+
+      <details>
         <summary>Pourquoi ce pronostic</summary>
         <ul class="why" id="why"></ul>
         <p class="note" style="margin-top:10px">La ligne « Forme » compare les derniers matchs à ce que
@@ -386,6 +394,21 @@ ul.why .up{color:var(--good)} ul.why .dn{color:var(--warn)}
     </div>
 
     <div class="panel">
+      <h2>Buteurs</h2>
+      <p class="note" id="scoNote"></p>
+      <div class="idrow" style="margin-top:12px">
+        <input type="text" id="pq" placeholder="Chercher un joueur : Torres, Rogers…">
+        <button id="pgo">Vérifier</button>
+      </div>
+      <div class="idres" id="pres"></div>
+      <p class="note" style="margin-top:10px">Le rythme de but d'un joueur est rétréci vers celui
+        d'un joueur ordinaire, d'autant plus fort qu'il a joué peu de matchs : trois buts en cinq
+        matchs ne font pas un buteur à 0,6 par match. La saison précédente compte pour moitié.
+        Aucune notion de forme récente n'entre dans ce calcul — l'API gratuite ne donne pas le
+        détail match par match.</p>
+    </div>
+
+    <div class="panel">
       <h2>Clé d'accès</h2>
       <p class="note" id="keyNote"></p>
       <div style="margin-top:12px">
@@ -403,6 +426,19 @@ ul.why .up{color:var(--good)} ul.why .dn{color:var(--warn)}
         <div><label class="note" for="reg">Prudence</label>
           <input type="number" id="reg" value="20" min="1" max="200" step="1"></div>
       </div>
+      <div style="margin-top:10px">
+        <label class="note" for="brk">Poids d'une saison passée (mercato)</label>
+        <select id="brk">
+          <option value="0.4">0,4 — effectif très remanié</option>
+          <option value="0.55">0,55</option>
+          <option value="0.7">0,7 — par défaut</option>
+          <option value="0.85">0,85</option>
+          <option value="1">1 — ignorer les transferts</option>
+        </select>
+      </div>
+      <p class="note" style="margin-top:10px">À chaque intersaison traversée, un match voit son poids
+        multiplié par ce coefficient : l'équipe qui l'a joué n'a plus le même effectif. À 0,7, un match
+        de la saison dernière compte pour 70 %, celui d'il y a deux ans pour 49 %.</p>
       <p class="note" style="margin-top:10px">La demi-vie fixe la vitesse d'oubli des vieux matchs.
         La prudence tire les équipes vers la moyenne : plus elle est haute, plus il faut de matchs
         pour convaincre le modèle qu'une équipe est hors norme.</p>
@@ -460,6 +496,7 @@ function fit(matches, opts={}){
   const reg      = opts.reg ?? 20;
   const sweeps   = opts.sweeps ?? 60;
   const fitRho   = opts.fitRho ?? true;
+  const breakW   = opts.breakW ?? 0.7;        // remise à chaque intersaison traversée
   const prior    = opts.prior || null;        // Map nom -> [attaque, défense] a priori
   const extra    = opts.extraTeams || [];     // équipes sans match, tenues par leur a priori
   const xi = Math.LN2 / halfLife;
@@ -469,9 +506,14 @@ function fit(matches, opts={}){
   const idx=new Map(teams.map((t,i)=>[t,i])), n=teams.length, L=matches.length;
   const H=new Int32Array(L), A=new Int32Array(L);
   const GH=new Float64Array(L), GA=new Float64Array(L), W=new Float64Array(L);
+  // L'effectif change à chaque mercato d'été : un match de la saison passée
+  // décrit une équipe qui n'est plus tout à fait la même.
+  const saisonDe=t=>{ const d=new Date(t); return d.getUTCMonth()>=6?d.getUTCFullYear():d.getUTCFullYear()-1; };
+  const sRef=saisonDe(refDate);
   matches.forEach((m,i)=>{
     H[i]=idx.get(m.home); A[i]=idx.get(m.away); GH[i]=m.hg; GA[i]=m.ag;
-    W[i]=Math.exp(-xi*Math.max(0,(refDate-m.t)/DAY));
+    const ecarts=Math.max(0,sRef-saisonDe(m.t));
+    W[i]=Math.exp(-xi*Math.max(0,(refDate-m.t)/DAY))*Math.pow(breakW,ecarts);
   });
 
   const asHome=Array.from({length:n},()=>[]), asAway=Array.from({length:n},()=>[]);
@@ -701,20 +743,26 @@ const state={results:[],fixtures:[],teams:new Map(),preds:{},model:null,
              sel:null,loading:false,view:'vMatches',cfg:{},
              scRaw:{},scorersOk:null,avg:new Map(),
              csvRows:[],alias:{},data:[],
-             elo:[],ealias:{},eloFit:null,form:new Map(),live:[],ref:{},clogo:{}};
+             elo:[],ealias:{},eloFit:null,form:new Map(),live:[],ref:{},clogo:{},pidx:null};
 
 /* ============================================================
    CHARGEMENT / SAUVEGARDE
    ============================================================ */
 function loadLocal(){
   state.cfg=Object.assign({comps:DEFAULT_COMPS,show:null,hl:250,reg:20,key:'',remember:false,
-                           depth:2,guess:false}, store.get(K.cfg,{}));
+                           depth:2,guess:false,brk:0.7}, store.get(K.cfg,{}));
   if(!Array.isArray(state.cfg.show)) state.cfg.show=state.cfg.comps.slice();
   state.results=(store.get(K.res,[])||[]).map(a=>({t:a[0],home:a[1],away:a[2],hg:a[3],ag:a[4],c:a[5]}));
   state.fixtures=(store.get(K.fix,[])||[]).map(a=>({t:a[0],home:a[1],away:a[2],c:a[3]}));
   state.teams=new Map(Object.entries(store.get(K.team,{})));
   state.preds=store.get(K.preds,{})||{};
   state.scRaw=store.get(K.sc,{})||{};
+  // Les entrées d'avant la v5.0 n'ont ni saison ni identifiant de joueur :
+  // gardées, elles feraient gagner l'ancien club d'un joueur transféré.
+  let purge=false;
+  for(const k of Object.keys(state.scRaw))
+    if(!k.includes('|')){ delete state.scRaw[k]; purge=true; }
+  if(purge){ store.set(K.sc,state.scRaw); state.scLegacy=true; }
   if(Object.keys(state.scRaw).length) state.scorersOk=true;
   state.csvRows=(store.get(K.csv,[])||[]).map(a=>({t:a[0],home:a[1],away:a[2],hg:a[3],ag:a[4],c:a[5]}));
   state.alias=store.get(K.alias,{})||{};
@@ -962,23 +1010,56 @@ function parseCSV(text,code){
   return out;
 }
 
-function ingestScorers(j,code){
-  state.scRaw[code]=(j.scorers||[]).map(x=>({
+function ingestScorers(j,code,saison){
+  state.scRaw[code+'|'+saison]=(j.scorers||[]).map(x=>({
+    id:(x.player&&x.player.id)||0,
     t:(x.team&&x.team.name)||'', n:(x.player&&x.player.name)||'',
     g:x.goals||0, m:x.playedMatches||0
   })).filter(x=>x.t&&x.n&&x.g>0);
   state.scorersOk=true;
+  state.pidx=null;
+}
+
+// Un joueur est suivi par son identifiant, et rattaché au club où on l'a vu
+// le plus récemment : ses buts de la saison passée le suivent chez son nouveau club.
+function playerIndex(){
+  if(state.pidx) return state.pidx;
+  const cur=season(), byId=new Map();
+  for(const [k,rows] of Object.entries(state.scRaw)){
+    if(!k.includes('|')) continue;
+    const sais=+k.split('|')[1];
+    for(const r of rows){
+      const id=r.id||('n:'+r.n);
+      let e=byId.get(id);
+      if(!e){ e={n:r.n,team:r.t,last:sais,g:0,m:0,pg:0,pm:0,clubs:new Set()}; byId.set(id,e); }
+      if(sais>e.last){ e.team=r.t; e.last=sais; e.n=r.n; }
+      e.clubs.add(r.t);
+      if(sais<cur){ e.pg+=r.g; e.pm+=r.m; } else { e.g+=r.g; e.m+=r.m; }
+    }
+  }
+  state.pidx=byId;
+  return byId;
 }
 
 function scorersFor(team){
-  const acc=new Map();
-  for(const rows of Object.values(state.scRaw))
-    for(const r of rows){
-      if(r.t!==team) continue;
-      const c=acc.get(r.n)||{g:0,m:0};
-      c.g+=r.g; c.m+=r.m; acc.set(r.n,c);
-    }
-  return [...acc.entries()].map(([n,v])=>({n,g:v.g,m:v.m}));
+  const out=[];
+  for(const e of playerIndex().values()){
+    if(e.team!==team) continue;
+    const venu=e.clubs.size>1?[...e.clubs].find(c=>c!==e.team):null;
+    out.push({n:e.n,g:e.g,m:e.m,pg:e.pg,pm:e.pm,venu});
+  }
+  return out;
+}
+function scorersCount(){
+  const cur=season(), par=new Map();
+  let n=0;
+  for(const [k,rows] of Object.entries(state.scRaw)){
+    if(!k.includes('|')) continue;
+    const [code,sais]=k.split('|');
+    n+=rows.length;
+    if(+sais===cur) par.set(code,rows.length);
+  }
+  return {n, par:[...par.entries()]};
 }
 
 function computeAvg(){
@@ -1027,12 +1108,13 @@ async function load(hard){
 
   // la saison écoulée ne bouge plus : inutile de la retélécharger
   const tasks=[['fix','',0]];
-  for(let i=0;i<depth;i++){
+  for(const c of codes) tasks.push(['m',c,cur]);
+  for(const c of codes) tasks.push(['sc',c,cur]);          // effectifs à jour d'abord
+  for(let i=1;i<depth;i++){
     const s2=cur-i;
-    for(const c of codes)
-      if(i===0||!mt.tasks[c+'|'+s2]) tasks.push(['m',c,s2]);
+    for(const c of codes) if(!mt.tasks[c+'|'+s2]) tasks.push(['m',c,s2]);
   }
-  for(const c of codes) tasks.push(['sc',c,cur]);
+  for(const c of codes) if(!mt.tasks['sc|'+c+'|'+(cur-1)]) tasks.push(['sc',c,cur-1]);
 
   let done=0;
   const step=m=>{ $('loadMsg').textContent=m; bar.style.width=(done/tasks.length*100)+'%'; };
@@ -1040,7 +1122,7 @@ async function load(hard){
   try{
     for(const [kind,c,s] of tasks){
       step(kind==='fix' ? 'Matchs à venir…'
-         : kind==='sc' ? `Buteurs · ${compName(c)} — ${done+1}/${tasks.length}`
+         : kind==='sc' ? `Buteurs ${compName(c)} ${s} — ${done+1}/${tasks.length}`
          : `${compName(c)} ${s}-${String(s+1).slice(2)} — ${done+1}/${tasks.length}`);
       let tries=0;
       while(true){
@@ -1050,7 +1132,8 @@ async function load(hard){
             const r=ingest(j,null); merge(r.res,r.fix); state.live=r.live;
           }else if(kind==='sc'){
             const j=await apiGet(`/v4/competitions/${c}/scorers?season=${s}&limit=100`);
-            ingestScorers(j,c);
+            ingestScorers(j,c,s);
+            if(s!==cur) mt.tasks['sc|'+c+'|'+s]=Date.now();
           }else{
             const j=await apiGet(`/v4/competitions/${c}/matches?season=${s}`);
             const r=ingest(j,c); merge(r.res,r.fix);
@@ -1696,14 +1779,24 @@ function scorerProbs(team,lam){
   if(!list.length||!av||!av.n) return [];
   const base=av.g/av.n;
   if(base<=0) return [];
-  const raw=list.filter(x=>x.m>=3)
-    .map(x=>({n:x.n, lam:(x.g/x.m)*(lam/base)}));
+  // Un joueur à 3 buts en 5 matchs n'est pas un buteur à 0,6 par match : on
+  // rétrécit son rythme vers celui d'un joueur ordinaire, d'autant plus fort
+  // que l'échantillon est court. La saison passée compte pour moitié.
+  const R0=0.12, K=6;
+  const raw=list.map(x=>{
+    const g=x.g+0.5*(x.pg||0), m=x.m+0.5*(x.pm||0);
+    if(m<1) return null;
+    const rythme=(g+K*R0)/(m+K);
+    return {n:x.n, g:x.g, m:x.m, pg:x.pg||0, pm:x.pm||0, venu:x.venu||null,
+            rythme, lam:rythme*(lam/base)};
+  }).filter(Boolean);
   // contrainte de cohérence : les buts des joueurs ne peuvent pas
   // dépasser les buts attendus de l'équipe
   const tot=raw.reduce((s,x)=>s+x.lam,0);
   const k=tot>lam?lam/tot:1;
-  return raw.map(x=>({n:x.n, team, p:1-Math.exp(-x.lam*k)}))
-            .filter(x=>x.p>=0.05);
+  return raw.map(x=>({n:x.n, team, g:x.g, m:x.m, pg:x.pg, pm:x.pm, venu:x.venu,
+                      p:1-Math.exp(-x.lam*k)}))
+            .filter(x=>x.p>=0.04);
 }
 
 function renderReco(h,a,p){
@@ -1726,7 +1819,9 @@ function renderReco(h,a,p){
     `${p.btts>=0.5?'Oui':'Non'} <em>${((p.btts>=0.5?p.btts:1-p.btts)*100).toFixed(0)} %</em>`);
   if(sc.length){
     html+=row('Buteur',sc.map(x=>
-      `${esc(x.n)} <em>${(x.p*100).toFixed(0)} %</em>`).join('<br>'));
+      `${esc(x.n)} <em>${(x.p*100).toFixed(0)} %</em>`+
+      `<small>${x.g} but${x.g>1?'s':''} en ${x.m} match${x.m>1?'s':''}`+
+      `${x.pm?` · ${x.pg} en ${x.pm} la saison passée${x.venu?` à ${esc(x.venu)}`:''}`:''}</small>`).join('')); 
   }else{
     html+=row('Buteur',state.scorersOk===false
       ? '<small>non fourni par ton plan</small>'
@@ -1816,6 +1911,22 @@ function renderForm5(h,a){
   $('form5').innerHTML=box(h)+box(a);
 }
 
+function renderScorers(h,a,p){
+  const bloc=(t,lam)=>{
+    const l=scorerProbs(t,lam).sort((x,y)=>y.p-x.p);
+    if(!l.length) return `<div class="fcard" style="margin-top:8px"><h3>${esc(t)}</h3>
+      <div class="st">aucun buteur connu dans les données chargées</div></div>`;
+    return `<div class="fcard" style="margin-top:8px"><h3>${esc(t)}</h3>`+
+      l.slice(0,12).map(x=>`<div style="display:flex;justify-content:space-between;gap:10px;
+        padding:5px 0;font-size:13.5px"><span style="min-width:0;overflow:hidden;
+        text-overflow:ellipsis;white-space:nowrap">${esc(x.n)}
+        <span style="color:var(--sage);font-size:11.5px">${x.g}/${x.m}${x.pm?` · ${x.pg}/${x.pm}`:''}${x.venu?' · ex-'+esc(x.venu):''}</span></span>
+        <b style="color:var(--sodium);font-weight:600">${(x.p*100).toFixed(0)} %</b></div>`).join('')+
+      '</div>';
+  };
+  $('scoList').innerHTML=bloc(h,p.lh)+bloc(a,p.la);
+}
+
 function renderDetail(){
   const m=state.model;              // la visibilité est gérée par show()
   if(!m||!state.sel) return;
@@ -1841,7 +1952,7 @@ function renderDetail(){
   }else{ $('mtime').textContent=''; $('mcomp').textContent=''; }
 
   const vide=()=>{
-    ['grid','bar','barkey','markets','reco','why','spread','form5'].forEach(id=>$(id).innerHTML='');
+    ['grid','bar','barkey','markets','reco','why','spread','form5','scoList'].forEach(id=>$(id).innerHTML='');
     $('recoNote').textContent='';
   };
   if(h===a){ $('xg').textContent='Choisis deux équipes différentes.'; vide(); return; }
@@ -1884,6 +1995,7 @@ function renderDetail(){
   }
 
   renderReco(h,a,p);
+  renderScorers(h,a,p);
   if(fz){
     const d=new Date(fz.upd||fz.t);
     $('form5').innerHTML=`<div class="fcard" style="grid-column:1/-1"><div class="st">
@@ -2003,6 +2115,14 @@ function renderStatus(){
   }
   $('setStatus').textContent=m?`${m.n} matchs en mémoire, ${m.teams.length} équipes.`:'Aucune donnée chargée.';
   const wait=state.csvRows.length?pending().length:0;
+  const sc=scorersCount();
+  $('scoNote').innerHTML=state.scorersOk===false
+    ? "Ton plan ne donne pas accès aux buteurs."
+    : sc.n ? `${sc.n} lignes chargées. Saison en cours : `+
+        sc.par.map(([c,n2])=>`${esc(compName(c))} ${n2}`).join(' · ')+
+        (state.scLegacy?`<br><span style="color:var(--warn)">Des données de buteurs périmées ont été
+          effacées : lance « Tout recharger ».</span>`:'')
+      : "Aucune donnée de buteurs. Lance « Tout recharger ».";
   $('cacheNote').textContent=STORAGE_OK
     ? `${state.results.length} résultats via l'API, ${state.csvRows.length} via les CSV`+
       (wait?` (dont ${wait} équipes non rattachées, écartées du modèle)`:'')+
@@ -2025,7 +2145,7 @@ function fillSelects(){
 function refresh(){
   buildData();
   if(state.elo.length) autoEalias();     // les nouvelles équipes sont rattachées ici
-  const o={halfLife:state.cfg.hl||250,reg:state.cfg.reg||20};
+  const o={halfLife:state.cfg.hl||250,reg:state.cfg.reg||20,breakW:state.cfg.brk??0.7};
   let m=state.data.length>=10 ? fit(state.data,o) : null;
   if(m){
     // 2e passe : on ancre les forces sur Elo et on ajoute les équipes
@@ -2108,7 +2228,7 @@ $('runBt').onclick=async()=>{
   $('runBt').disabled=true; $('runTune').disabled=true;
   $('btProg').classList.remove('hidden');
   const bar=$('btProg').querySelector('i');
-  const r=await backtest(state.data,{halfLife:state.cfg.hl,reg:state.cfg.reg},f=>bar.style.width=(f*100)+'%');
+  const r=await backtest(state.data,{halfLife:state.cfg.hl,reg:state.cfg.reg,breakW:state.cfg.brk??0.7},f=>bar.style.width=(f*100)+'%');
   $('btProg').classList.add('hidden'); bar.style.width='0';
   $('runBt').disabled=false; $('runTune').disabled=false;
   if(!r){ $('btOut').innerHTML='<p class="flag">Pas assez de matchs.</p>'; return; }
@@ -2136,7 +2256,7 @@ $('runTune').onclick=async()=>{
   const bar=$('btProg').querySelector('i'), gv=[5,10,20,40,80], rows=[];
   let best=null;
   for(let i=0;i<gv.length;i++){
-    const r=await backtest(state.data,{halfLife:state.cfg.hl,reg:gv[i],fitRho:false},
+    const r=await backtest(state.data,{halfLife:state.cfg.hl,reg:gv[i],fitRho:false,breakW:state.cfg.brk??0.7},
       f=>bar.style.width=(((i+f)/gv.length)*100)+'%');
     if(!r) break;
     rows.push({reg:gv[i],ll:r.logloss});
@@ -2181,6 +2301,7 @@ $('remember').onchange=()=>{
   state.cfg[id]=+$(id).value||(id==='hl'?250:20); saveCfg(); refresh();
 });
 $('depth').onchange=()=>{ state.cfg.depth=+$('depth').value; saveCfg(); };
+$('brk').onchange=()=>{ state.cfg.brk=+$('brk').value; saveCfg(); refresh(); };
 $('guess').onchange=()=>{ state.cfg.guess=$('guess').checked; saveCfg(); refresh(); };
 ['home','away','neutral'].forEach(id=>$(id).addEventListener('change',()=>{
   state.sel={home:$('home').value,away:$('away').value,it:null}; renderDetail();
@@ -2217,6 +2338,44 @@ $('csvSrc').querySelectorAll('input').forEach(i=>i.onchange=()=>{
 });
 $('csvGo').onclick=loadCsv;
 $('eloGo').onclick=loadElo;
+
+// Vérifier de ses propres yeux ce que l'app a réellement enregistré
+function chercheJoueur(){
+  const q=norm($('pq').value);
+  if(!q){ $('pres').textContent=''; return; }
+  const cur=season();
+  const lignes=[];
+  for(const [k,rows] of Object.entries(state.scRaw)){
+    if(!k.includes('|')) continue;
+    const [code,sais]=k.split('|');
+    for(const r of rows) if(norm(r.n).includes(q))
+      lignes.push({code,sais:+sais,...r});
+  }
+  if(!lignes.length){
+    $('pres').innerHTML=`<span style="color:var(--warn)">Aucun joueur de ce nom dans les données.</span>
+      Soit il n'a pas encore marqué dans une compétition chargée, soit l'API ne l'a pas renvoyé.`;
+    return;
+  }
+  const noms=new Map();
+  for(const l of lignes){
+    const id=l.id||('n:'+l.n);
+    if(!noms.has(id)) noms.set(id,[]);
+    noms.get(id).push(l);
+  }
+  let html='';
+  for(const [id,ls] of noms){
+    ls.sort((a,b)=>b.sais-a.sais);
+    const e=[...playerIndex().values()].find(x=>(x.id||0,true)&&x.n===ls[0].n);
+    html+=`<div style="margin-top:10px"><b>${esc(ls[0].n)}</b> — club retenu par l'app :
+      <b style="color:var(--sodium)">${esc(ls[0].t)}</b></div>`;
+    for(const l of ls)
+      html+=`<div style="margin-left:8px">${l.sais}${l.sais===cur?' (en cours)':''} ·
+        ${esc(compName(l.code))} · ${esc(l.t)} · ${l.g} but${l.g>1?'s':''} en ${l.m} match${l.m>1?'s':''}</div>`;
+  }
+  $('pres').innerHTML=html;
+}
+$('pgo').onclick=chercheJoueur;
+$('pq').addEventListener('keydown',e=>{ if(e.key==='Enter') chercheJoueur(); });
 $('eloLink').href=eloUrl();
 $('eloLink').textContent=eloUrl();
 $('eloPasteGo').onclick=()=>{
@@ -2240,6 +2399,7 @@ $('reg').value=state.cfg.reg||20;
 $('key').value=state.cfg.key||'';
 $('remember').checked=!!state.cfg.remember;
 $('depth').value=String(state.cfg.depth||2);
+$('brk').value=String(state.cfg.brk??0.7);
 $('guess').checked=!!state.cfg.guess;
 refresh();
 
