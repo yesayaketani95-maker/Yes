@@ -76,9 +76,9 @@ label.check input{width:auto;accent-color:var(--sodium)}
   text-transform:uppercase;margin:20px 0 10px}
 .day:first-of-type{margin-top:6px}
 .day.live{color:#FF5A5A}
-.pill{display:inline-flex;align-items:center;gap:6px;color:#FF5A5A;font-weight:700;
+.pill{display:inline-flex;align-items:center;gap:6px;color:#FF6B6B;font-weight:700;
   letter-spacing:.03em;font-size:11.5px}
-.pill i{width:7px;height:7px;border-radius:50%;background:#FF5A5A;display:block}
+.pill i{width:7px;height:7px;border-radius:50%;background:#FF4D4D;display:block;flex:0 0 7px}
 @media (prefers-reduced-motion:no-preference){
   .pill i{animation:blink 1.6s ease-in-out infinite}
   @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
@@ -114,10 +114,11 @@ label.check input{width:auto;accent-color:var(--sodium)}
 .back{background:none;padding:0;color:var(--sage);font-size:14px;font-weight:500;margin-bottom:14px}
 .back:hover{background:none;color:var(--chalk)}
 .mhead{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:start;margin-bottom:16px}
-.mhead .sd{text-align:center;min-width:0}
-.mhead .sd img{width:42px;height:42px;object-fit:contain;margin:0 auto 7px;display:block}
-.mhead .sd span{display:block;font-size:13.5px;font-weight:600;line-height:1.3;
-  overflow:hidden;text-overflow:ellipsis}
+.mhead .sd{min-width:0;display:flex;flex-direction:column;align-items:center}
+.mhead .sd img{width:42px;height:42px;object-fit:contain;margin-bottom:7px}
+.mhead .sd .nm{font-size:13.5px;font-weight:600;line-height:1.3;text-align:center;
+  min-height:2.6em;display:flex;align-items:center;justify-content:center;width:100%}
+.mhead .sd .sc{font-size:26px;font-weight:700;line-height:1.1;margin-top:2px;min-height:1.1em}
 .mhead .mid{text-align:center;color:var(--sage);font-size:12.5px;padding-top:10px}
 .mhead .mid img{width:18px;height:18px;object-fit:contain;vertical-align:-4px;margin-right:5px}
 .mhead .mid b{display:block;color:var(--chalk);font-size:15px;font-weight:600;margin-bottom:3px}
@@ -226,9 +227,9 @@ ul.why .up{color:var(--good)} ul.why .dn{color:var(--warn)}
     <button class="back" id="back">← Retour</button>
     <div class="panel">
       <div class="mhead">
-        <div class="sd"><img id="ch" alt=""><span id="nh"></span><span id="sh" style="font-size:22px"></span></div>
+        <div class="sd"><img id="ch" alt=""><span class="nm" id="nh"></span><span class="sc" id="sh"></span></div>
         <div class="mid"><b id="mtime"></b><span id="mcomp"></span></div>
-        <div class="sd"><img id="ca" alt=""><span id="na"></span><span id="sa" style="font-size:22px"></span></div>
+        <div class="sd"><img id="ca" alt=""><span class="nm" id="na"></span><span class="sc" id="sa"></span></div>
       </div>
 
       <div class="reco" id="reco"></div>
@@ -1570,10 +1571,13 @@ function card(f,kind){
     if(done||live) return `<span class="sc">${side==='h'?f.hg:f.ag}</span>`;
     return `<span class="pr">${p?pct(side==='h'?p.home:p.away):'—'}</span>`;
   };
-  const favH = wait ? false : (done||live) ? f.hg>f.ag : (!!p&&p.home>=p.away);
-  const favA = wait ? false : (done||live) ? f.ag>f.hg : (!!p&&p.away>p.home);
+  const nul = (done||live) && !wait && f.hg===f.ag;
+  const favH = wait||nul ? false : (done||live) ? f.hg>f.ag : (!!p&&p.home>=p.away);
+  const favA = wait||nul ? false : (done||live) ? f.ag>f.hg : (!!p&&p.away>p.home);
+  // à égalité, personne n'est en tête : on ne grise rien
+  const dim = s2=>(done||live)&&!wait&&!nul&&!s2;
   const line=(nm,fav,side)=>
-    `<div class="side${fav?' fav':''}${(done||live)&&!fav?' dim':''}">${img(nm)}
+    `<div class="side${fav?' fav':''}${dim(fav)?' dim':''}">${img(nm)}
       <span class="nm">${esc(nm)}</span>${right(side)}</div>`;
 
   let foot;
@@ -1654,7 +1658,8 @@ function renderList(){
 }
 
 function openDetail(h,a,it,frozen){
-  state.sel={home:h,away:a,it:it||null,frozen:frozen||null};
+  state.sel={home:h,away:a,it:it||null,frozen:frozen||null,
+             from:frozen?'history':'matches'};
   if(state.model){ $('home').value=h; $('away').value=a; }
   show('vDetail');
   renderDetail();
@@ -1822,11 +1827,16 @@ function renderDetail(){
   $('ca').style.visibility=crest(a)?'visible':'hidden';
   $('nh').textContent=h; $('na').textContent=a;
   const done=it&&it.hg!==undefined&&it.home===h&&it.away===a;
+  const enDirect=!!(it&&state.live.some(l=>l.home===it.home&&l.away===it.away&&l.t===it.t));
+  const pause=enDirect&&it.pause;
   $('sh').textContent=done?it.hg:''; $('sa').textContent=done?it.ag:'';
   if(it){
     const d=new Date(it.t);
-    $('mtime').textContent=state.sel.frozen?'Archivé':done?'Terminé'
-      :d.toLocaleString('fr-FR',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+    $('mtime').textContent= state.sel.from==='history' ? 'Archivé'
+      : pause ? 'Mi-temps'
+      : enDirect ? 'En direct'
+      : done ? 'Terminé'
+      : d.toLocaleString('fr-FR',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
     $('mcomp').innerHTML=compLogo(it.c)+esc(compName(it.c));
   }else{ $('mtime').textContent=''; $('mcomp').textContent=''; }
 
@@ -1838,7 +1848,13 @@ function renderDetail(){
 
   // Pronostic ouvert depuis l'historique : on rejoue exactement celui d'avant
   // le match, reconstruit à partir des buts attendus figés à l'époque.
-  const fz=state.sel.frozen;
+  // Match déjà commencé : on affiche le pronostic tel qu'il était avant le
+  // coup d'envoi, pas un recalcul qui tiendrait compte de ce qui vient de se passer.
+  let fz=state.sel.frozen;
+  if(!fz&&it&&it.t<=Date.now()){
+    const cand=state.preds[pkey(it)];
+    if(cand&&cand.l) fz=cand;
+  }
   let p;
   if(fz&&fz.l&&fz.home===h&&fz.away===a){
     const g=grid(fz.l[0],fz.l[1],fz.l[2]);
@@ -1872,8 +1888,8 @@ function renderDetail(){
     const d=new Date(fz.upd||fz.t);
     $('form5').innerHTML=`<div class="fcard" style="grid-column:1/-1"><div class="st">
       Pronostic figé le ${esc(d.toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}))},
-      avant le coup d'envoi. Tous les chiffres de cette page sont ceux d'alors, pas ceux d'aujourd'hui.
-      </div></div>`;
+      avant le coup d'envoi. Les chiffres de cette page sont ceux d'alors : ils ne tiennent pas compte
+      de ce qui s'est passé depuis.</div></div>`;
   }else{
     renderForm5(h,a);
   }
@@ -2141,7 +2157,7 @@ $('runTune').onclick=async()=>{
    BRANCHEMENTS
    ============================================================ */
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>show(b.dataset.v));
-$('back').onclick=()=>show(state.sel&&state.sel.frozen?'vHistory':'vMatches');
+$('back').onclick=()=>show(state.sel&&state.sel.from==='history'?'vHistory':'vMatches');
 $('reload').onclick=()=>load(false);
 $('hard').onclick=()=>load(true);
 $('wipe').onclick=()=>{
