@@ -401,6 +401,10 @@ ul.why .up{color:var(--good)} ul.why .dn{color:var(--warn)}
         <button id="pgo">Vérifier</button>
       </div>
       <div class="idres" id="pres"></div>
+      <p class="note" style="margin-top:10px">Les joueurs sont rattachés à leur club via l'effectif
+        officiel de chaque équipe, ce qui règle les transferts tout seul. Si l'un d'eux est quand même
+        au mauvais endroit, choisis le bon club : ta correction prime sur l'API et reste mémorisée. « Ignorer ce joueur » le sort
+        complètement du calcul, utile pour quelqu'un parti dans un championnat non chargé.</p>
       <p class="note" style="margin-top:10px">Le rythme de but d'un joueur est rétréci vers celui
         d'un joueur ordinaire, d'autant plus fort qu'il a joué peu de matchs : trois buts en cinq
         matchs ne font pas un buteur à 0,6 par match. La saison précédente compte pour moitié.
@@ -697,7 +701,8 @@ async function backtest(matches,opts={},onProg){
 const K={res:'prono.res',fix:'prono.fix',team:'prono.team',meta:'prono.meta',
          preds:'prono.preds',cfg:'prono.cfg',sc:'prono.sc',
          csv:'prono.csv',alias:'prono.alias',elo:'prono.elo',ealias:'prono.ealias',
-         live:'prono.live',ref:'prono.ref',clogo:'prono.clogo'};
+         live:'prono.live',ref:'prono.ref',clogo:'prono.clogo',pfix:'prono.pfix',
+         squad:'prono.squad'};
 let STORAGE_OK=true;
 const store={
   get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(_){ return d; } },
@@ -743,7 +748,7 @@ const state={results:[],fixtures:[],teams:new Map(),preds:{},model:null,
              sel:null,loading:false,view:'vMatches',cfg:{},
              scRaw:{},scorersOk:null,avg:new Map(),
              csvRows:[],alias:{},data:[],
-             elo:[],ealias:{},eloFit:null,form:new Map(),live:[],ref:{},clogo:{},pidx:null};
+             elo:[],ealias:{},eloFit:null,form:new Map(),live:[],ref:{},clogo:{},pidx:null,pfix:{}};
 
 /* ============================================================
    CHARGEMENT / SAUVEGARDE
@@ -770,6 +775,9 @@ function loadLocal(){
   if(lv&&Date.now()-lv.ts<4*3600000) state.live=lv.rows||[];
   state.ref=store.get(K.ref,{})||{};
   state.clogo=store.get(K.clogo,{})||{};
+  state.pfix=store.get(K.pfix,{})||{};
+  state.squad=store.get(K.squad,{})||{};
+  if(Object.keys(state.squad).length) state.squadOk=true;
   state.elo=store.get(K.elo,[])||[];
   state.ealias=store.get(K.ealias,{})||{};
   if(!Array.isArray(state.cfg.csv)) state.cfg.csv=DEFAULT_CSV.slice();
@@ -785,6 +793,8 @@ const saveAlias=()=>store.set(K.alias,state.alias);
 const saveLive=()=>store.set(K.live,{ts:Date.now(),rows:state.live});
 const saveRef=()=>store.set(K.ref,state.ref);
 const saveClogo=()=>store.set(K.clogo,state.clogo);
+const savePfix=()=>{ store.set(K.pfix,state.pfix); state.pidx=null; };
+const saveSquad=()=>{ store.set(K.squad,state.squad); state.pidx=null; };
 const saveElo=()=>store.set(K.elo,state.elo);
 const saveEalias=()=>store.set(K.ealias,state.ealias);
 const savePreds=()=>store.set(K.preds,state.preds);
@@ -1037,8 +1047,37 @@ function playerIndex(){
       if(sais<cur){ e.pg+=r.g; e.pm+=r.m; } else { e.g+=r.g; e.m+=r.m; }
     }
   }
+  const aSupprimer=[];
+  for(const [id,e] of byId){
+    // 1. l'effectif officiel du club tranche les transferts
+    const sq=state.squad&&state.squad[id];
+    if(sq&&sq!==e.team){ e.team=sq; e.viaSquad=true; }
+    else if(sq) e.viaSquad=true;
+    // 2. une correction manuelle prime sur tout
+    const f=state.pfix&&state.pfix[id];
+    if(f==='__none__') aSupprimer.push(id);
+    else if(f){ e.team=f; e.corrige=true; }
+  }
+  for(const id of aSupprimer) byId.delete(id);
   state.pidx=byId;
   return byId;
+}
+
+// Effectif du moment : l'autorité sur « qui joue où », indépendamment
+// de savoir si le joueur a déjà marqué cette saison.
+function ingestSquads(j){
+  let n=0;
+  for(const t of (j.teams||[])){
+    if(!t.name) continue;
+    noteTeam(t);
+    for(const p of (t.squad||[])){
+      if(!p||!p.id) continue;
+      state.squad[p.id]=t.name; n++;
+    }
+  }
+  if(n) state.squadOk=true;
+  state.pidx=null;
+  return n;
 }
 
 function scorersFor(team){
@@ -1046,7 +1085,8 @@ function scorersFor(team){
   for(const e of playerIndex().values()){
     if(e.team!==team) continue;
     const venu=e.clubs.size>1?[...e.clubs].find(c=>c!==e.team):null;
-    out.push({n:e.n,g:e.g,m:e.m,pg:e.pg,pm:e.pm,venu});
+    out.push({n:e.n,g:e.g,m:e.m,pg:e.pg,pm:e.pm,venu,
+              corrige:!!e.corrige,viaSquad:!!e.viaSquad});
   }
   return out;
 }
@@ -1109,7 +1149,8 @@ async function load(hard){
   // la saison écoulée ne bouge plus : inutile de la retélécharger
   const tasks=[['fix','',0]];
   for(const c of codes) tasks.push(['m',c,cur]);
-  for(const c of codes) tasks.push(['sc',c,cur]);          // effectifs à jour d'abord
+  for(const c of codes) tasks.push(['sq',c,cur]);          // effectifs du moment
+  for(const c of codes) tasks.push(['sc',c,cur]);
   for(let i=1;i<depth;i++){
     const s2=cur-i;
     for(const c of codes) if(!mt.tasks[c+'|'+s2]) tasks.push(['m',c,s2]);
@@ -1122,6 +1163,7 @@ async function load(hard){
   try{
     for(const [kind,c,s] of tasks){
       step(kind==='fix' ? 'Matchs à venir…'
+         : kind==='sq' ? `Effectifs ${compName(c)} — ${done+1}/${tasks.length}`
          : kind==='sc' ? `Buteurs ${compName(c)} ${s} — ${done+1}/${tasks.length}`
          : `${compName(c)} ${s}-${String(s+1).slice(2)} — ${done+1}/${tasks.length}`);
       let tries=0;
@@ -1130,6 +1172,11 @@ async function load(hard){
           if(kind==='fix'){
             const j=await apiGet(`/v4/matches?competitions=${codes.join(',')}&dateFrom=${iso(Date.now())}&dateTo=${iso(Date.now()+9*DAY)}`);
             const r=ingest(j,null); merge(r.res,r.fix); state.live=r.live;
+          }else if(kind==='sq'){
+            let j;
+            try{ j=await apiGet(`/v4/competitions/${c}/teams?season=${s}`); }
+            catch(e2){ if(e2.rate) throw e2; j=await apiGet(`/v4/competitions/${c}/teams`); }
+            if(!ingestSquads(j)&&state.squadOk===null) state.squadOk=false;
           }else if(kind==='sc'){
             const j=await apiGet(`/v4/competitions/${c}/scorers?season=${s}&limit=100`);
             ingestScorers(j,c,s);
@@ -1142,6 +1189,7 @@ async function load(hard){
           break;
         }catch(e){
           if(e.rate&&tries++<3){ step("Limite de l'API atteinte, pause…"); await sleep(20000); continue; }
+          if(kind==='sq'){ if(state.squadOk===null) state.squadOk=false; break; }
           if(kind==='sc'){ if(state.scorersOk===null) state.scorersOk=false; break; }
           if(kind==='m'&&s!==cur&&e.fatal) break;   // saison ancienne hors plan : on continue
           if(e.fatal) throw e;
@@ -1151,7 +1199,7 @@ async function load(hard){
       done++; refresh();
       if(done<tasks.length) await sleep(THROTTLE);
     }
-    mt.loaded=Date.now(); setMeta(mt); saveData(); saveClogo();
+    mt.loaded=Date.now(); setMeta(mt); saveData(); saveClogo(); saveSquad();
     $('loadMsg').classList.add('hidden');
   }catch(e){
     $('loadErr').innerHTML=`<p class="flag">${esc(e.message)}</p>`;
@@ -1788,14 +1836,14 @@ function scorerProbs(team,lam){
     if(m<1) return null;
     const rythme=(g+K*R0)/(m+K);
     return {n:x.n, g:x.g, m:x.m, pg:x.pg||0, pm:x.pm||0, venu:x.venu||null,
-            rythme, lam:rythme*(lam/base)};
+            corrige:!!x.corrige, viaSquad:!!x.viaSquad, rythme, lam:rythme*(lam/base)};
   }).filter(Boolean);
   // contrainte de cohérence : les buts des joueurs ne peuvent pas
   // dépasser les buts attendus de l'équipe
   const tot=raw.reduce((s,x)=>s+x.lam,0);
   const k=tot>lam?lam/tot:1;
   return raw.map(x=>({n:x.n, team, g:x.g, m:x.m, pg:x.pg, pm:x.pm, venu:x.venu,
-                      p:1-Math.exp(-x.lam*k)}))
+                      corrige:x.corrige, viaSquad:x.viaSquad, p:1-Math.exp(-x.lam*k)}))
             .filter(x=>x.p>=0.04);
 }
 
@@ -1920,7 +1968,7 @@ function renderScorers(h,a,p){
       l.slice(0,12).map(x=>`<div style="display:flex;justify-content:space-between;gap:10px;
         padding:5px 0;font-size:13.5px"><span style="min-width:0;overflow:hidden;
         text-overflow:ellipsis;white-space:nowrap">${esc(x.n)}
-        <span style="color:var(--sage);font-size:11.5px">${x.g}/${x.m}${x.pm?` · ${x.pg}/${x.pm}`:''}${x.venu?' · ex-'+esc(x.venu):''}</span></span>
+        <span style="color:var(--sage);font-size:11.5px">${x.g}/${x.m}${x.pm?` · ${x.pg}/${x.pm}`:''}${x.venu?' · ex-'+esc(x.venu):''}${x.corrige?' · corrigé':''}</span></span>
         <b style="color:var(--sodium);font-weight:600">${(x.p*100).toFixed(0)} %</b></div>`).join('')+
       '</div>';
   };
@@ -2123,6 +2171,14 @@ function renderStatus(){
         (state.scLegacy?`<br><span style="color:var(--warn)">Des données de buteurs périmées ont été
           effacées : lance « Tout recharger ».</span>`:'')
       : "Aucune donnée de buteurs. Lance « Tout recharger ».";
+  const nsq=Object.keys(state.squad||{}).length;
+  $('scoNote').innerHTML+= state.squadOk===false
+    ? `<br><span style="color:var(--warn)">Les effectifs ne sont pas accessibles avec ta clé : les
+       transferts ne peuvent être devinés qu'à partir des buts marqués cette saison.</span>`
+    : nsq ? `<br>${nsq} joueurs rattachés à leur club via l'effectif officiel.`
+          : `<br>Effectifs non chargés. Lance « Tout recharger ».`;
+  const nf=Object.keys(state.pfix||{}).length;
+  if(nf) $('scoNote').innerHTML+=`<br>${nf} joueur(s) dont le club a été corrigé à la main.`;
   $('cacheNote').textContent=STORAGE_OK
     ? `${state.results.length} résultats via l'API, ${state.csvRows.length} via les CSV`+
       (wait?` (dont ${wait} équipes non rattachées, écartées du modèle)`:'')+
@@ -2282,7 +2338,7 @@ $('reload').onclick=()=>load(false);
 $('hard').onclick=()=>load(true);
 $('wipe').onclick=()=>{
   if(!confirm("Effacer les matchs en cache et tout l'historique des pronostics ?")) return;
-  [K.res,K.fix,K.team,K.meta,K.preds,K.sc,K.csv,K.alias,K.elo,K.ealias,K.live,K.ref,K.clogo].forEach(store.del);
+  [K.res,K.fix,K.team,K.meta,K.preds,K.sc,K.csv,K.alias,K.elo,K.ealias,K.live,K.ref,K.clogo,K.pfix,K.squad].forEach(store.del);
   state.results=[]; state.fixtures=[]; state.teams=new Map(); state.preds={};
   state.scRaw={}; state.scorersOk=null; state.csvRows=[]; state.alias={};
   state.elo=[]; state.ealias={}; state.eloFit=null;
@@ -2362,17 +2418,35 @@ function chercheJoueur(){
     if(!noms.has(id)) noms.set(id,[]);
     noms.get(id).push(l);
   }
+  const idx=playerIndex();
+  const equipes=state.model?state.model.teams:[];
   let html='';
   for(const [id,ls] of noms){
     ls.sort((a,b)=>b.sais-a.sais);
-    const e=[...playerIndex().values()].find(x=>(x.id||0,true)&&x.n===ls[0].n);
-    html+=`<div style="margin-top:10px"><b>${esc(ls[0].n)}</b> — club retenu par l'app :
-      <b style="color:var(--sodium)">${esc(ls[0].t)}</b></div>`;
+    const e=idx.get(id);
+    const retenu=e?e.team:ls[0].t;
+    const fix=(state.pfix&&state.pfix[id])||'';
+    html+=`<div class="alias"><b>${esc(ls[0].n)}</b>`;
     for(const l of ls)
-      html+=`<div style="margin-left:8px">${l.sais}${l.sais===cur?' (en cours)':''} ·
-        ${esc(compName(l.code))} · ${esc(l.t)} · ${l.g} but${l.g>1?'s':''} en ${l.m} match${l.m>1?'s':''}</div>`;
+      html+=`<span class="hint">${l.sais}${l.sais===cur?' (en cours)':''} ·
+        ${esc(compName(l.code))} · ${esc(l.t)} · ${l.g} but${l.g>1?'s':''} en ${l.m} match${l.m>1?'s':''}</span>`;
+    const src = fix ? 'corrigé à la main'
+      : (e&&e.viaSquad) ? "d'après l'effectif officiel"
+      : 'déduit de ses buts les plus récents';
+    html+=`<span class="hint">Club retenu : <b style="color:var(--sodium)">${esc(retenu)}</b>
+      — ${src}</span>
+      <select data-p="${esc(String(id))}">
+        <option value=""${fix?'':' selected'}>— tel que l'API l'indique —</option>
+        <option value="__none__"${fix==='__none__'?' selected':''}>— ignorer ce joueur —</option>
+        ${equipes.map(t=>`<option value="${esc(t)}"${fix===t?' selected':''}>${esc(t)}</option>`).join('')}
+      </select></div>`;
   }
   $('pres').innerHTML=html;
+  $('pres').querySelectorAll('select').forEach(sl=>sl.onchange=()=>{
+    const id=sl.dataset.p;
+    if(sl.value) state.pfix[id]=sl.value; else delete state.pfix[id];
+    savePfix(); refresh(); chercheJoueur();
+  });
 }
 $('pgo').onclick=chercheJoueur;
 $('pq').addEventListener('keydown',e=>{ if(e.key==='Enter') chercheJoueur(); });
