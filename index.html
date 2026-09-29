@@ -487,6 +487,65 @@ select,input[type=text],input[type=password],input[type=number],textarea{
   box-shadow:0 16px 34px -10px #000,inset 0 1px 0 rgba(255,255,255,.07)}
 .tabs button{height:56px;font-size:10.5px;gap:3px}
 .wrap{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+
+/* ================================================================
+   v6.1 — filigranes et Pourquoi lisible
+   ================================================================ */
+/* en-tête de l'accueil : l'état passe sous le titre */
+.top{flex-direction:column;align-items:flex-start;gap:2px}
+.top .status{text-align:left}
+
+/* logo de la compétition en filigrane derrière l'affiche */
+.dhero{position:relative;overflow:hidden;isolation:isolate}
+.dhero::before{content:'';position:absolute;inset:-12% 16%;z-index:-1;pointer-events:none;
+  background:var(--cl,none) center/contain no-repeat;
+  filter:grayscale(1) brightness(0) invert(1);opacity:.075;
+  transform:rotate(-9deg) scale(1.2);
+  -webkit-mask-image:radial-gradient(closest-side,#000 55%,transparent);
+  mask-image:radial-gradient(closest-side,#000 55%,transparent)}
+
+/* pourcentage en filigrane derrière chaque tuile */
+.tile{position:relative;overflow:hidden;min-height:78px}
+.tile span,.tile b{position:relative}
+.tbg{position:absolute;right:-4px;bottom:-16px;pointer-events:none;font-style:normal;
+  font-variation-settings:'wdth' 125;font-weight:800;font-size:74px;line-height:1;letter-spacing:-.05em;
+  color:transparent;-webkit-text-stroke:1.2px rgba(245,165,36,.5);
+  background:linear-gradient(180deg,rgba(245,165,36,.3),transparent 82%);
+  -webkit-background-clip:text;background-clip:text}
+.tbg small{font-size:.42em;letter-spacing:0;margin-left:1px}
+.tile b{font-size:21px;padding-right:40px}
+
+/* marchés : une barre proportionnelle derrière chaque ligne */
+#markets.rows{display:block}
+.mk{position:relative;display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:10px 10px;margin:4px -10px;border-radius:9px;overflow:hidden;font-size:14.5px}
+.mk::before{content:'';position:absolute;left:0;top:0;bottom:0;width:var(--w);border-radius:9px;
+  background:linear-gradient(90deg,rgba(245,165,36,.2),rgba(245,165,36,.05));
+  box-shadow:inset -1px 0 0 rgba(245,165,36,.35)}
+.mk span,.mk b{position:relative}
+.mk span{color:var(--sage)}
+.mk b{font-variation-settings:'wdth' 125;font-weight:800}
+
+/* le Pourquoi */
+.wyhead{padding:4px 2px 6px}
+.wyh{font-variation-settings:'wdth' 125;font-weight:800;font-size:22px;letter-spacing:-.01em;line-height:1.2}
+.wyhead p{color:var(--chalk);font-size:15px;line-height:1.5;margin:8px 0 0}
+.wy{margin-top:10px;border-radius:16px;padding:14px 14px 12px;
+  background:linear-gradient(180deg,rgba(255,255,255,.055) 0%,rgba(255,255,255,.012) 40%,rgba(255,255,255,0) 100%),#0D0D0F;
+  border:1px solid rgba(255,255,255,.06);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 22px 44px -22px #000,0 2px 8px rgba(0,0,0,.7)}
+.wyt{font-size:13px;font-weight:600;color:var(--sage);margin-bottom:10px}
+.wy p{margin:8px 0 0;font-size:14.5px;line-height:1.5;color:var(--chalk)}
+.wy p:first-of-type{margin-top:0}
+.wy .vs+p{margin-top:10px}
+.wy .up{color:var(--good)} .wy .dn{color:var(--warn)}
+.vs{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px}
+.vs .xp{font-size:14px;min-width:46px}
+.vs .xp.a{text-align:right}
+.vsb{display:flex;height:10px;gap:3px}
+.vsb i{display:block;border-radius:5px;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -2px 3px rgba(0,0,0,.3)}
+.vsb .h{background:linear-gradient(180deg,#FFC24F,#F5A524 55%,#D98A10)}
+.vsb .a{background:linear-gradient(180deg,#78C4FF,#3FA7F5 55%,#1F86D6)}
 </style>
 </head>
 <body>
@@ -506,7 +565,7 @@ select,input[type=text],input[type=password],input[type=number],textarea{
   <!-- ============ DÉTAIL ============ -->
   <section id="vDetail" class="hidden">
     <button class="back" id="back">← Retour</button>
-    <div class="dhero">
+    <div class="dhero" id="dhero">
       <div class="dside"><div id="ch"></div><span class="nm" id="nh"></span><span class="sc" id="sh"></span></div>
       <div class="dmid"><span id="mcomp"></span><b id="mtime"></b></div>
       <div class="dside"><div id="ca"></div><span class="nm" id="na"></span><span class="sc" id="sa"></span></div>
@@ -538,10 +597,7 @@ select,input[type=text],input[type=password],input[type=number],textarea{
     </div>
 
     <div class="tabp hidden" id="tab-po">
-      <div class="panel"><ul class="why" id="why"></ul>
-        <p class="note" style="margin-top:10px">La ligne « Forme » compare les derniers matchs à ce que
-          le modèle attendait. Un écart faible est normal : les matchs récents pèsent déjà dans les notes.</p>
-      </div>
+      <div id="why"></div>
       <div class="panel">
         <h2>Grille des scores</h2>
         <p class="xg" id="xg"></p>
@@ -740,7 +796,7 @@ select,input[type=text],input[type=password],input[type=number],textarea{
     </div>
 
     <p class="note" style="text-align:center;margin-top:20px">
-      Prono v6.0 — Poisson bivarié, correction Dixon-Coles.<br>
+      Prono v6.1 — Poisson bivarié, correction Dixon-Coles.<br>
       football-data.org · football-data.co.uk · clubelo.com
     </p>
   </section>
@@ -2224,63 +2280,104 @@ function scorerProbs(team,lam){
 function renderWhy(h,a,p){
   const m=state.model, ih=m.idx.get(h), ia=m.idx.get(a);
   if(ih===undefined&&ia===undefined){ $('why').innerHTML=''; return; }
+  const H=esc(shortName(h)), A=esc(shortName(a));
+  const neutre=$('neutral').checked;
+  const fr=(x,d=1)=>x.toFixed(d).replace('.',',');
 
-  // repère : moyenne des équipes réellement observées
+  // repère : l'équipe moyenne des équipes réellement observées
   let sa=0,sd=0,c=0;
   for(let i=0;i<m.teams.length;i++) if(m.seen[i]>0){ sa+=m.att[i]; sd+=m.def[i]; c++; }
   const mA=c?sa/c:0, mD=c?sd/c:0;
+  const obs=[...m.teams.keys()].filter(i=>m.seen[i]>0), N=obs.length;
+  const ordA=obs.slice().sort((x,y)=>m.att[y]-m.att[x]);
+  const ordD=obs.slice().sort((x,y)=>m.def[y]-m.def[x]);
+  const rang=(ord,i)=>{ const k=ord.indexOf(i); return k<0?null:k+1; };
+  const place=(r,quoi)=>r===null?'':r===1?`la meilleure ${quoi} des ${N} équipes`:`la ${r}ᵉ meilleure ${quoi} sur ${N}`;
 
-  const obs=[...m.teams.keys()].filter(i=>m.seen[i]>0);
-  const rankBy=(arr,i)=>arr.slice().sort((x,y)=>arr[y]-arr[x]).indexOf(arr[i]);
-  const attOrder=obs.slice().sort((x,y)=>m.att[y]-m.att[x]);
-  const defOrder=obs.slice().sort((x,y)=>m.def[y]-m.def[x]);
-  const pos=(order,i)=>{ const k=order.indexOf(i); return k<0?null:`${k+1}ᵉ sur ${order.length}`; };
+  // buts marqués et encaissés, rapportés à une équipe moyenne (1 = moyenne)
+  const atk=i=>i===undefined?null:Math.exp(m.att[i]-mA);
+  const enc=i=>i===undefined?null:Math.exp(-(m.def[i]-mD));
+  const ecart=x=>Math.round(Math.abs(x-1)*100);
+  const aH=atk(ih), aA=atk(ia), cH=enc(ih), cA=enc(ia);
 
-  const mult=x=>x>=1?('×'+x.toFixed(2)):('×'+x.toFixed(2));
-  const li=(t,d)=>`<li><span class="t">${t}</span><span class="d">${d}</span></li>`;
-  const L=[];
+  const face=(vh,va,lh,la)=>`<div class="vs"><span class="xp h">${lh}</span>`+
+    `<div class="vsb"><i class="h" style="flex:${vh}"></i><i class="a" style="flex:${va}"></i></div>`+
+    `<span class="xp a">${la}</span></div>`;
+  const signe=x=>ecart(x)<3?'moyenne':(x>=1?'+':'−')+ecart(x)+' %';
+  const carte=(titre,corps)=>`<div class="wy"><div class="wyt">${titre}</div>${corps}</div>`;
+  const out=[];
 
-  const NA='<span style="color:var(--sage)">aucune donnée</span>';
-  const att1=i=>i===undefined?NA:
-    `${mult(Math.exp(m.att[i]-mA))} la moyenne${pos(attOrder,i)?` (${pos(attOrder,i)})`:''}`;
-  const def1=i=>i===undefined?NA:
-    `${mult(Math.exp(-(m.def[i]-mD)))} la moyenne${pos(defOrder,i)?` (${pos(defOrder,i)})`:''}`;
+  // ---- la synthèse ----
+  const serre=Math.abs(p.home-p.away)<0.08;
+  const fav=p.home>=p.away?H:A;
+  let titre= p.draw>p.home&&p.draw>p.away ? 'Pourquoi le nul est probable'
+    : serre ? 'Pourquoi ce match est serré' : `Pourquoi ${fav} est favori`;
+  const pts=[];
+  if(aH&&aA) pts.push(aH>aA*1.1?`${H} attaque mieux`:aA>aH*1.1?`${A} attaque mieux`:'les deux attaques se valent');
+  if(cH&&cA) pts.push(cH<cA/1.1?`${H} défend mieux`:cA<cH/1.1?`${A} défend mieux`:'les deux défenses se valent');
+  const bonusDom=Math.exp(m.adv)-1;
+  if(!neutre&&bonusDom>0.03) pts.push(`${H} joue à domicile`);
+  let synth=pts.length>1?pts.slice(0,-1).join(', ')+' et '+pts[pts.length-1]:(pts[0]||'');
+  synth=synth.charAt(0).toUpperCase()+synth.slice(1)+'.';
+  out.push(`<div class="wyhead"><div class="wyh">${titre}</div><p>${synth}</p></div>`);
 
-  L.push(li('Attaques',`<b>${esc(h)}</b> marque ${att1(ih)} · <b>${esc(a)}</b> ${att1(ia)}`));
-  L.push(li('Défenses',`<b>${esc(h)}</b> encaisse ${def1(ih)} · <b>${esc(a)}</b> ${def1(ia)}`));
-
-  const fh=state.form.get(h), fa=state.form.get(a);
-  const say=f=>{
-    if(!f) return 'pas assez de matchs récents';
-    const txt=`${f.gf} marqué${f.gf>1?'s':''} pour ${f.ef.toFixed(1)} attendu${f.ef>1?'s':''}, `+
-              `${f.ga} encaissé${f.ga>1?'s':''} pour ${f.ea.toFixed(1)}`;
-    if(Math.abs(f.d)<1.8*f.sd) return `${txt} — dans la marge du hasard`;
-    return f.d>0 ? `<span class="up">${txt} — au-dessus de son niveau</span>`
-                 : `<span class="dn">${txt} — en dessous</span>`;
-  };
-  if(fh||fa){
-    L.push(li('Forme',`<b>${esc(h)}</b>, ${fh?fh.n:0} derniers matchs : ${say(fh)}`));
-    L.push(li('',`<b>${esc(a)}</b>, ${fa?fa.n:0} derniers matchs : ${say(fa)}`));
+  // ---- qui marque le plus ----
+  if(aH||aA){
+    const ph=(nm,x,i)=>x===null?`On n'a aucun match de ${nm}.`
+      :ecart(x)<3?`${nm} marque autant qu'une équipe moyenne, ${place(rang(ordA,i),'attaque')}.`
+      :`${nm} marque ${ecart(x)} % ${x>=1?'de plus':'de moins'} qu'une équipe moyenne, ${place(rang(ordA,i),'attaque')}.`;
+    out.push(carte('Qui marque le plus',
+      (aH&&aA?face(aH,aA,signe(aH),signe(aA)):'')+`<p>${ph(H,aH,ih)} ${ph(A,aA,ia)}</p>`));
   }
 
-  const advPct=Math.round((Math.exp(m.adv)-1)*100);
-  L.push(li('Terrain',`recevoir vaut <b>+${advPct} %</b> de buts dans ces données`));
+  // ---- qui encaisse le moins (barre : plus c'est long, plus c'est solide) ----
+  if(cH||cA){
+    const ph=(nm,x,i)=>x===null?`On n'a aucun match de ${nm}.`
+      :ecart(x)<3?`${nm} encaisse autant qu'une équipe moyenne, ${place(rang(ordD,i),'défense')}.`
+      :`${nm} encaisse ${ecart(x)} % ${x<=1?'de moins':'de plus'} qu'une équipe moyenne, ${place(rang(ordD,i),'défense')}.`;
+    out.push(carte('Qui encaisse le moins',
+      (cH&&cA?face(1/cH,1/cA,signe(cH),signe(cA)):'')+`<p>${ph(H,cH,ih)} ${ph(A,cA,ia)}</p>`));
+  }
 
+  // ---- le terrain ----
+  if(!neutre){
+    const adv=Math.round(Math.abs(bonusDom)*100);
+    out.push(carte('Le terrain', adv<3
+      ? `<p>${H} reçoit, mais dans tes données jouer à domicile ne change presque rien au nombre de buts.</p>`
+      : `<p>${H} reçoit. Dans tes données, l'équipe qui joue à domicile marque en moyenne ${adv} % de buts ${bonusDom>0?'en plus':'en moins'}.</p>`));
+  }
+
+  // ---- la forme ----
+  const forme=(t,nm)=>{
+    const f=state.form.get(t);
+    if(!f) return `${nm} : pas assez de matchs récents pour juger.`;
+    const base=`${nm} a marqué ${f.gf} but${f.gf>1?'s':''} et en a encaissé ${f.ga} sur ses ${f.n} derniers matchs`;
+    if(Math.abs(f.d)<1.8*f.sd) return `${base}, à peu près ce qu'on attendait d'elle : rien d'anormal.`;
+    return f.d>0 ? `${base}, <span class="up">mieux que prévu : elle est en forme.</span>`
+                 : `${base}, <span class="dn">moins bien que prévu : elle est en difficulté.</span>`;
+  };
+  out.push(carte('La forme du moment',`<p>${forme(h,H)}</p><p>${forme(a,A)}</p>`));
+
+  // ---- ce que ça donne ----
   const ref=Math.exp(m.mu+mA-mD+m.adv)+Math.exp(m.mu+mA-mD);
   const tot=p.lh+p.la;
-  L.push(li('Total',`<b>${tot.toFixed(2)}</b> buts attendus, contre ${ref.toFixed(2)} pour un match moyen`));
+  const ton=tot<ref*0.9?'plutôt fermé':tot>ref*1.1?'plutôt ouvert':'dans la moyenne';
+  out.push(carte('Ce que ça donne',
+    face(p.lh,p.la,fr(p.lh),fr(p.la))+
+    `<p>Le modèle attend ${fr(p.lh)} but pour ${H} et ${fr(p.la)} pour ${A}, soit ${fr(tot)} au total. `+
+    `Un match moyen en compte ${fr(ref)} : on s'attend à un match ${ton}.</p>`));
 
-  const basis=t=>{
+  // ---- sur quoi c'est basé ----
+  const base=(t,nm)=>{
     const i=m.idx.get(t), e=eloOf(t);
-    if(i===undefined) return e!==null
-      ? `absente du modèle malgré une note Elo ${e} — recharge les données`
-      : `absente du modèle et sans note Elo : rattache-la dans Réglages → Forces de référence`;
-    if(m.seen[i]<1) return `aucun match, note Elo ${e!==null?e:'—'}`;
-    return `${m.seen[i].toFixed(0)} matchs pondérés${e!==null?`, Elo ${e}`:''}`;
+    if(i===undefined) return `${nm} n'a aucun match dans tes données`;
+    if(m.seen[i]<1) return `${nm} n'a aucun match joué : son niveau vient ${state.ref&&state.ref[t]?'d\'un réglage à la main':'de sa note Elo'}`;
+    return `${m.seen[i].toFixed(0)} matchs récents pour ${nm}`;
   };
-  L.push(li('Base',`<b>${esc(h)}</b> : ${basis(h)} · <b>${esc(a)}</b> : ${basis(a)}`));
+  out.push(carte('Sur quoi c\'est basé',
+    `<p>${base(h,H)}, ${base(a,A)}. Plus il y a de matchs récents, plus le calcul est fiable.</p>`));
 
-  $('why').innerHTML=L.join('');
+  $('why').innerHTML=out.join('');
 }
 
 function renderForm5(h,a){
@@ -2338,14 +2435,17 @@ function renderReco(h,a,p,c,archive){
   const over=p.over[2.5]>=0.5, totP=over?p.over[2.5]:1-p.over[2.5];
   const top=p.top[0];
   const sc=[...scorerProbs(h,p.lh),...scorerProbs(a,p.la)].sort((x,y)=>y.p-x.p);
-  const tile=(k,v)=>`<div class="tile"><span>${k}</span><b>${v}</b></div>`;
+  // chaque tuile : la question, la réponse, et sa probabilité gravée derrière
+  const tile=(k,v,pc)=>`<div class="tile">${pc===null?'':`<i class="tbg">${pc}<small>%</small></i>`}`+
+    `<span>${k}</span><b>${v}</b></div>`;
   $('tiles').innerHTML=
-    tile(`${over?'Plus':'Moins'} de 2,5 buts`,`${pctI(totP)} %`)+
-    tile('Les deux marquent',`${p.btts>=0.5?'Oui':'Non'} ${pctI(p.btts>=0.5?p.btts:1-p.btts)} %`)+
-    tile('Score le plus probable',`${top.x} – ${top.y}`)+
+    tile('Total de buts',`${over?'Plus':'Moins'} de 2,5`,pctI(totP))+
+    tile('Les deux marquent',p.btts>=0.5?'Oui':'Non',pctI(p.btts>=0.5?p.btts:1-p.btts))+
+    tile('Score le plus probable',`${top.x} – ${top.y}`,pctI(top.p))+
     tile('Buteur principal', sc.length
-      ? `<span class="cn">${esc(sc[0].n)}</span> <em>${pctI(sc[0].p)} %</em>`
-      : `<span class="nb">${state.scorersOk===false?'non fourni par ton plan':'pas encore chargé'}</span>`);
+      ? `<span class="cn">${esc(sc[0].n)}</span>`
+      : `<span class="nb">${state.scorersOk===false?'non fourni par ton plan':'pas encore chargé'}</span>`,
+      sc.length?pctI(sc[0].p):null);
 
   $('recoNote').textContent=sc.length
     ? "Probabilité qu'un joueur marque au moins une fois, estimée à partir de son rythme de but, ajusté aux buts attendus de son équipe dans ce match."
@@ -2358,6 +2458,10 @@ function renderDetail(){
   const h=$('home').value||state.sel.home, a=$('away').value||state.sel.away;
   const it=state.sel.it;
 
+  {
+    const u=it&&state.clogo&&state.clogo[it.c];
+    $('dhero').style.setProperty('--cl',u?`url("${String(u).replace(/"/g,'%22')}")`:'none');
+  }
   $('ch').innerHTML=crest3d(h,76,24,7);
   $('ca').innerHTML=crest3d(a,76,-24,7);
   $('nh').textContent=shortName(h); $('na').textContent=shortName(a);
@@ -2434,7 +2538,7 @@ function renderDetail(){
     ['Plus de 1,5 but',o[1.5]],['Plus de 2,5 buts',o[2.5]],['Plus de 3,5 buts',o[3.5]],
     ['Les deux équipes marquent',p.btts],
     [`${shortName(h)} ou nul`,p.home+p.draw],[`${shortName(a)} ou nul`,p.away+p.draw]
-  ].map(([k,v])=>`<dt>${esc(k)}</dt><dd>${pct(v)}</dd>`).join('');
+  ].map(([k,v])=>`<div class="mk" style="--w:${(v*100).toFixed(1)}%"><span>${esc(k)}</span><b>${pct(v)}</b></div>`).join('');
 
   $('xg').innerHTML=`Buts attendus <b>${p.lh.toFixed(2)}</b> – <b>${p.la.toFixed(2)}</b>`;
   $('axH').textContent=`buts de ${shortName(h)} ↓`;
@@ -2453,8 +2557,8 @@ function renderDetail(){
         `${tete==='d'?'le nul ne peut prendre que':'cette issue se répartit sur'} ${nb[tete]} score${nb[tete]>1?'s':''} `+
         `plausible${nb[tete]>1?'s':''}, contre ${nb[fav]} pour ${esc(nom[fav])}.`;
   }
-  if(fz) $('why').innerHTML='<li><span class="d">Explication indisponible pour un pronostic archivé : '+
-    'les forces des équipes ont changé depuis.</span></li>';
+  if(fz) $('why').innerHTML='<div class="wy"><p>Explication indisponible pour un pronostic archivé : '+
+    'les forces des équipes ont changé depuis.</p></div>';
   else renderWhy(h,a,p);
 
   if(fz){ $('mismatch').classList.add('hidden'); return; }
@@ -2527,7 +2631,8 @@ function renderStatus(){
   if(!m){ $('status').textContent=state.data.length?'Données insuffisantes.':'Aucune donnée. Ouvre Réglages.'; }
   else{
     const age=mt.loaded?Math.round((Date.now()-mt.loaded)/60000):null;
-    const ago=age===null?'':age<60?` · mis à jour il y a ${age} min`:` · mis à jour il y a ${Math.round(age/60)} h`;
+    const ago=age===null?'':age<60?` · mis à jour il y a ${age} min`
+      :age<48*60?` · mis à jour il y a ${Math.round(age/60)} h`:` · mis à jour il y a ${Math.round(age/1440)} j`;
     $('status').textContent=`${m.n} matchs · ${m.teams.length} équipes${ago}`;
   }
   $('setStatus').textContent=m?`${m.n} matchs en mémoire, ${m.teams.length} équipes.`:'Aucune donnée chargée.';
