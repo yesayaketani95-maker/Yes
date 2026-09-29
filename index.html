@@ -3,10 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="color-scheme" content="dark">
 <title>Prono</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
 <style>
 :root{
   --night:#101A2E; --recess:#0A1222; --raise:#1B2A47;
@@ -208,6 +210,283 @@ ul.why .up{color:var(--good)} ul.why .dn{color:var(--warn)}
   td.pop{animation:pop .28s ease-out backwards}
   @keyframes pop{from{opacity:0;transform:scale(.82)}}
 }
+
+/* ================================================================
+   Thème v5.6 — noir de stade, profondeur par touches.
+   Ajouté après les règles d'origine : il les surcharge sans les effacer.
+   ================================================================ */
+:root{
+  --night:#000000; --recess:#0D0D0F; --raise:#1A1A1F;
+  --chalk:#F4F4F2; --sage:#8C8C93;
+  --sodium:#F5A524; --cyan:#3FA7F5;
+  --line:rgba(255,255,255,.08);
+}
+html{background:#000}
+body{background:transparent}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;
+  background:
+    radial-gradient(120% 55% at 50% -14%, rgba(245,165,36,.11), transparent 62%),
+    radial-gradient(90% 40% at 50% 118%, rgba(63,167,245,.05), transparent 70%)}
+
+h1{font-variation-settings:'wdth' 118;font-weight:800;letter-spacing:-.025em;
+  text-shadow:0 1px 0 #2a2a2e,0 2px 0 #1c1c20,0 3px 0 #111114,0 12px 24px rgba(0,0,0,.9)}
+.day{text-transform:none;letter-spacing:0;font-size:17px;font-weight:700;
+  color:var(--chalk);margin:28px 0 10px}
+.day.live{color:#FF5A5A}
+.rule{background:linear-gradient(90deg,transparent,rgba(255,255,255,.13),transparent)}
+
+.panel,.fx{
+  background:linear-gradient(180deg,rgba(255,255,255,.055) 0%,rgba(255,255,255,.012) 40%,rgba(255,255,255,0) 100%),#0D0D0F;
+  border:1px solid rgba(255,255,255,.06);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 22px 44px -22px #000,0 2px 8px rgba(0,0,0,.7)}
+.panel{border-radius:18px}
+.fx{border-radius:16px;transition:transform .12s ease,box-shadow .12s ease}
+.fx:hover{background:linear-gradient(180deg,rgba(255,255,255,.07) 0%,rgba(255,255,255,.015) 40%,rgba(255,255,255,0) 100%),#101013}
+.fx:active{transform:perspective(900px) rotateX(3deg) translateY(2px) scale(.99);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 8px 16px -10px #000}
+
+.panel .reco,.panel .fcard,.kpi div,.panel .scores span{
+  background:#060607;border:1px solid rgba(255,255,255,.035);
+  box-shadow:inset 0 2px 7px rgba(0,0,0,.85),inset 0 -1px 0 rgba(255,255,255,.04)}
+.panel .reco,.panel .fcard{border-radius:12px}
+
+.fx .side img,table.data td img,.clogo{
+  filter:drop-shadow(0 0 .6px rgba(255,255,255,.55)) drop-shadow(0 3px 4px rgba(0,0,0,.9))}
+
+.mhead{position:relative;padding:20px 4px 8px;margin:-6px -6px 18px;border-radius:14px;
+  background:radial-gradient(75% 95% at 50% 0%,rgba(245,165,36,.17),transparent 70%)}
+.mhead .sd{position:relative}
+.mhead .sd img{width:66px;height:66px;margin-bottom:12px;
+  filter:drop-shadow(0 0 1px rgba(255,255,255,.35)) drop-shadow(0 12px 10px rgba(0,0,0,.95)) drop-shadow(0 2px 2px rgba(0,0,0,.8));
+  transform:perspective(520px) rotateY(var(--turn,0deg))}
+.mhead .sd:first-child{--turn:24deg}
+.mhead .sd:last-child{--turn:-24deg}
+.mhead .sd::before{content:'';position:absolute;top:70px;left:50%;width:58px;height:10px;
+  transform:translateX(-50%);border-radius:50%;
+  background:radial-gradient(closest-side,rgba(0,0,0,.95),transparent)}
+.mhead .sd .nm{font-size:14px}
+.mhead .sd .sc{font-variation-settings:'wdth' 125;font-weight:800;font-size:42px;line-height:1;
+  color:#fff;margin-top:6px;
+  text-shadow:0 1px 0 #c9c9c9,0 2px 0 #969696,0 3px 0 #636363,0 4px 0 #333,0 12px 20px rgba(0,0,0,.95)}
+.mhead .mid b{font-variation-settings:'wdth' 118;font-size:17px;font-weight:800;letter-spacing:.01em}
+@media (prefers-reduced-motion:no-preference){
+  #vDetail:not(.hidden) .mhead .sd img{animation:pivote .75s cubic-bezier(.2,.8,.2,1) both}
+  #vDetail:not(.hidden) .mhead .sd:last-child img{animation-delay:.06s}
+  @keyframes pivote{from{opacity:0;transform:perspective(520px) rotateY(0deg) translateY(10px) scale(.9)}}
+}
+
+.bar{height:38px;border-radius:12px;
+  box-shadow:0 12px 24px -12px #000,0 0 0 1px rgba(255,255,255,.05)}
+.bar div{color:#111;font-weight:700;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),inset 0 -3px 6px rgba(0,0,0,.28)}
+.bar .h{background:linear-gradient(180deg,#FFC24F,#F5A524 55%,#D98A10)}
+.bar .d{background:linear-gradient(180deg,#D8DBE3,#B9BCC6 55%,#9A9DA8)}
+.bar .a{background:linear-gradient(180deg,#78C4FF,#3FA7F5 55%,#1F86D6)}
+.minibar{height:6px;background:#050506;box-shadow:inset 0 1px 2px rgba(0,0,0,.9)}
+.minibar .d{background:#9A9DA8}
+
+.badge{position:relative;overflow:hidden;box-shadow:inset 0 -2px 3px rgba(0,0,0,.35),0 3px 7px rgba(0,0,0,.85)}
+.badge::after{content:'';position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.45),rgba(255,255,255,0) 42%)}
+.badge.d{background:#6E717C}
+
+.wdl span{box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 -2px 3px rgba(0,0,0,.25),0 2px 4px rgba(0,0,0,.7)}
+table.grid td{border-radius:5px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06),inset 0 -1px 2px rgba(0,0,0,.55)}
+
+.btnrow button,.idrow button,.done button,.idres button{
+  background:linear-gradient(180deg,#25252B,#16161A);border:1px solid rgba(255,255,255,.07);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 6px 14px -8px #000}
+.btnrow button:hover,.idrow button:hover{background:linear-gradient(180deg,#2C2C33,#1A1A1F)}
+.btnrow button:active,.idrow button:active{transform:translateY(1px);box-shadow:inset 0 2px 6px rgba(0,0,0,.8)}
+.btnrow button.primary{background:linear-gradient(180deg,#FFC24F,#F5A524 60%,#DC8C12);color:#140E02;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 8px 18px -8px rgba(245,165,36,.55)}
+
+select,input[type=text],input[type=password],input[type=number],textarea{
+  background:#050506;border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 2px 5px rgba(0,0,0,.8)}
+.comps label,.seg{background:#050506;box-shadow:inset 0 1px 3px rgba(0,0,0,.8)}
+
+.tabs{background:rgba(0,0,0,.72);-webkit-backdrop-filter:blur(18px) saturate(140%);
+  backdrop-filter:blur(18px) saturate(140%);border-top:1px solid rgba(255,255,255,.07);
+  box-shadow:0 -12px 30px rgba(0,0,0,.8)}
+.tabs button.on svg{filter:drop-shadow(0 0 6px rgba(245,165,36,.55))}
+
+/* ================================================================
+   Refonte v6.0 — habillage de retransmission TV.
+   Couleurs inchangées : noir, ambre (domicile), gris (nul), bleu (extérieur).
+   Une seule police, Archivo, dont on fait varier la largeur :
+   condensée pour les noms, élargie pour les chiffres.
+   ================================================================ */
+.cn{font-variation-settings:'wdth' 75;font-weight:600;letter-spacing:.005em}
+.xp{font-variation-settings:'wdth' 125;font-weight:800}
+.xp.h{color:var(--sodium)} .xp.a{color:var(--cyan)}
+
+/* ---------- en-tête de l'accueil ---------- */
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.top h1{font-size:28px}
+.top .status{margin:0;text-align:right;font-size:12px}
+
+/* ---------- bande de dates ---------- */
+.dates{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:16px -16px 10px;padding:4px 16px 8px}
+.dates::-webkit-scrollbar{display:none}
+.dt{position:relative;flex:0 0 auto;min-width:52px;padding:6px 0 8px;border-radius:14px;
+  background:none;border:0;color:var(--chalk);text-align:center;cursor:pointer}
+.dt span{display:block;color:var(--sage);font-size:11px;font-weight:500}
+.dt b{display:block;font-variation-settings:'wdth' 125;font-weight:800;font-size:19px;line-height:1.2}
+.dt.on{background:#0D0D0F;box-shadow:inset 0 0 0 1px rgba(245,165,36,.5),0 8px 16px -10px rgba(245,165,36,.5)}
+.dt.on b{color:var(--sodium)}
+.dt .lv{position:absolute;top:7px;right:8px;width:6px;height:6px;border-radius:50%;background:#FF4D4D}
+
+/* ---------- puces de compétitions ---------- */
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -16px 16px;padding:2px 16px 6px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;display:inline-flex;align-items:center;gap:2px;padding:7px 12px;border-radius:999px;
+  font-size:12.5px;font-weight:500;color:var(--sage);background:#0D0D0F;
+  border:1px solid rgba(255,255,255,.07);white-space:nowrap;cursor:pointer}
+.chip.on{color:var(--sodium);border-color:rgba(245,165,36,.45)}
+
+/* ---------- écusson en relief ---------- */
+.c3{position:relative;width:var(--s);height:var(--s);flex:0 0 var(--s);perspective:520px}
+.c3in{position:absolute;inset:0;transform-style:preserve-3d;transform:rotateY(var(--turn,0deg)) rotateX(6deg)}
+.c3in img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.c3l{transform:translateZ(calc(var(--z) * -1.3px));filter:brightness(.18) saturate(.4)}
+.c3f{transform:translateZ(0);filter:drop-shadow(0 0 .8px rgba(255,255,255,.45))}
+.c3gl{position:absolute;inset:0;transform:translateZ(.6px);pointer-events:none;mix-blend-mode:screen;
+  background:linear-gradient(125deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,.08) 34%,rgba(255,255,255,0) 55%,rgba(255,255,255,.12) 100%);
+  -webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+  -webkit-mask-position:center;mask-position:center}
+.c3sh{position:absolute;left:50%;bottom:calc(var(--s) * -.14);width:78%;height:calc(var(--s) * .18);
+  transform:translateX(-50%);border-radius:50%;pointer-events:none;
+  background:radial-gradient(closest-side,rgba(0,0,0,.95),transparent)}
+.c3x{display:none;position:absolute;inset:6%;border-radius:18% 18% 46% 46%;align-items:center;justify-content:center;
+  background:linear-gradient(160deg,#2A2A31,#131316);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 -3px 6px rgba(0,0,0,.6),0 6px 10px rgba(0,0,0,.8);
+  font-variation-settings:'wdth' 75;font-weight:800;font-size:calc(var(--s) * .3);color:var(--chalk)}
+.c3.noimg .c3in{display:none}
+.c3.noimg .c3x,.c3.nocrest .c3x{display:flex}
+
+/* ---------- rapport de force ---------- */
+.tug{display:flex;height:8px;border-radius:4px;overflow:hidden;background:#050506;box-shadow:inset 0 1px 2px rgba(0,0,0,.9)}
+.tug i{display:block}
+.tug .h{background:linear-gradient(180deg,#FFC24F,#F5A524 55%,#D98A10)}
+.tug .d{background:linear-gradient(180deg,#D8DBE3,#9A9DA8)}
+.tug .a{background:linear-gradient(180deg,#78C4FF,#1F86D6)}
+.tug.big{height:12px;border-radius:6px}
+.tugk{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--sage);margin-bottom:6px}
+.tugk .xp{font-size:15px}
+
+/* ---------- surfaces communes ---------- */
+.hero,.mr,.verdict,.tabp .fcard,#scoList .fcard{
+  background:linear-gradient(180deg,rgba(255,255,255,.055) 0%,rgba(255,255,255,.012) 40%,rgba(255,255,255,0) 100%),#0D0D0F;
+  border:1px solid rgba(255,255,255,.06);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 22px 44px -22px #000,0 2px 8px rgba(0,0,0,.7)}
+
+/* ---------- à la une ---------- */
+.hero{display:block;width:100%;text-align:left;color:inherit;font-weight:400;cursor:pointer;
+  border-radius:22px;padding:14px 14px 16px;margin-bottom:6px;
+  background:radial-gradient(90% 70% at 50% 0%,rgba(245,165,36,.17),transparent 70%),
+    linear-gradient(180deg,rgba(255,255,255,.055),transparent 50%),#0D0D0F}
+.hhead{display:flex;justify-content:space-between;align-items:center;color:var(--sage);font-size:12px}
+.hhead .cd{color:var(--sodium);font-weight:600}
+.hteams{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;margin:16px 0 18px}
+.ht{display:flex;flex-direction:column;align-items:center;gap:14px;min-width:0}
+.ht .cn{font-size:16px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hero .mid .t{font-size:22px}
+.hero .mid .s{font-size:30px}
+
+/* ---------- lignes en miroir ---------- */
+.mr{display:block;width:100%;text-align:left;color:inherit;font-weight:400;cursor:pointer;
+  border-radius:16px;padding:12px 12px 10px;margin-bottom:8px;transition:transform .12s ease}
+.mr:active,.hero:active{transform:perspective(900px) rotateX(3deg) translateY(2px) scale(.99)}
+.mrt{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px}
+.tm{display:flex;align-items:center;gap:9px;min-width:0}
+.tm.r{justify-content:flex-end}
+.tm .cn{font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tm.dim .cn{color:var(--sage)}
+.mid{text-align:center;min-width:56px}
+.mid .t{font-variation-settings:'wdth' 125;font-weight:800;font-size:14px;color:var(--sage)}
+.mid .s{font-variation-settings:'wdth' 125;font-weight:800;font-size:21px;line-height:1.1;color:#fff;
+  text-shadow:0 1px 0 #9a9a9a,0 2px 0 #5e5e5e,0 3px 0 #333,0 8px 14px #000}
+.mid .pill{justify-content:center;font-size:10px}
+.tugr{display:grid;grid-template-columns:24px 1fr 24px;align-items:center;gap:8px;margin-top:11px}
+.tugr .xp{font-size:12px;text-align:center}
+.mrf{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;
+  color:var(--sage);font-size:11.5px;min-height:22px}
+.mrf span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mrf .badge{width:22px;height:22px;flex:0 0 22px;font-size:11px}
+.comp{display:flex;align-items:center;color:var(--sage);font-size:12.5px;font-weight:600;margin:18px 0 8px}
+
+/* ---------- fiche match : l'affiche ---------- */
+.dhero{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:start;
+  padding:18px 0 14px;margin:0 -4px 14px;border-radius:18px;
+  background:radial-gradient(80% 90% at 50% 0%,rgba(245,165,36,.18),transparent 70%)}
+.dside{display:flex;flex-direction:column;align-items:center;gap:16px;min-width:0}
+.dside .nm{font-variation-settings:'wdth' 75;font-weight:700;font-size:17px;text-align:center;
+  line-height:1.2;min-height:2.4em;display:flex;align-items:center;max-width:100%}
+.dside .sc{font-variation-settings:'wdth' 125;font-weight:800;font-size:44px;line-height:1;color:#fff;margin-top:-8px;
+  text-shadow:0 1px 0 #c9c9c9,0 2px 0 #969696,0 3px 0 #636363,0 4px 0 #333,0 12px 20px rgba(0,0,0,.95)}
+.dside .sc:empty{display:none}
+.dmid{text-align:center;color:var(--sage);font-size:11.5px;padding-top:22px;min-width:84px}
+.dmid b{display:block;color:var(--chalk);font-variation-settings:'wdth' 125;font-weight:800;font-size:22px;margin-top:4px}
+.dmid .dd{display:block;margin-top:2px}
+.dmid .clogo{width:15px;height:15px;vertical-align:-3px}
+@media (prefers-reduced-motion:no-preference){
+  #vDetail:not(.hidden) .dside .c3in{animation:pivote .8s cubic-bezier(.2,.8,.2,1) both}
+  #vDetail:not(.hidden) .dside:last-child .c3in{animation-delay:.07s}
+  @keyframes pivote{from{opacity:0;transform:rotateY(0deg) rotateX(6deg) translateY(12px) scale(.88)}}
+}
+
+/* ---------- onglets de la fiche ---------- */
+.dtabs{display:flex;gap:4px;padding:4px;border-radius:14px;background:#050506;
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.9);margin-bottom:14px}
+.dtabs button{flex:1;background:none;border:0;color:var(--sage);font-size:12.5px;font-weight:500;
+  padding:9px 0;border-radius:10px;cursor:pointer}
+.dtabs button.on{color:var(--chalk);font-weight:600;background:linear-gradient(180deg,#25252B,#16161A);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 10px -6px #000}
+.tabp .panel{margin-top:12px}
+
+/* ---------- le verdict, avec le pourcentage en filigrane ---------- */
+.verdict{position:relative;overflow:hidden;border-radius:20px;padding:16px 16px 18px}
+.vbg{position:absolute;right:-10px;top:-26px;pointer-events:none;
+  font-variation-settings:'wdth' 125;font-weight:800;font-size:132px;line-height:1;letter-spacing:-.05em;
+  color:transparent;
+  -webkit-text-stroke:1.5px rgba(245,165,36,.4);
+  background:linear-gradient(180deg,rgba(245,165,36,.25),transparent 78%);
+  -webkit-text-stroke:1.5px color-mix(in srgb,var(--vc) 45%,transparent);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--vc) 30%,transparent),transparent 78%);
+  -webkit-background-clip:text;background-clip:text}
+.vbg small{font-size:.42em;letter-spacing:0;margin-left:2px}
+.vhead,.vtitle,.vsub,.verdict .tugk,.verdict .tug{position:relative}
+.vhead{display:flex;justify-content:space-between;align-items:center;color:var(--sage);font-size:12.5px}
+.vtag{font-size:11.5px;font-weight:700;color:#0A1020;border-radius:999px;padding:3px 9px;background:#6E717C;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 3px 8px rgba(0,0,0,.7)}
+.vtag.g-a{background:var(--good)} .vtag.g-b{background:var(--sodium)}
+.vtag.g-c{background:#C98A5E} .vtag.g-e{background:#79A7DE}
+.vtitle{font-variation-settings:'wdth' 125;font-weight:800;font-size:27px;letter-spacing:-.015em;
+  margin:8px 0 2px;text-shadow:0 2px 0 #1c1c20,0 10px 18px #000}
+.vsub{color:var(--sage);font-size:13px;margin-bottom:16px}
+
+/* ---------- tuiles de chiffres clés ---------- */
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.tile{background:#060607;border:1px solid rgba(255,255,255,.035);border-radius:14px;padding:11px 12px;
+  box-shadow:inset 0 2px 7px rgba(0,0,0,.85),inset 0 -1px 0 rgba(255,255,255,.04);min-width:0}
+.tile span{display:block;color:var(--sage);font-size:11.5px}
+.tile b{display:block;font-variation-settings:'wdth' 125;font-weight:800;font-size:20px;margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile b .cn{font-size:16px}
+.tile b em{font-style:normal;color:var(--sodium);font-size:15px}
+.tile b .nb{font-size:12.5px;font-weight:500;font-variation-settings:'wdth' 100;color:var(--sage)}
+
+/* ---------- forme et buteurs, hors panneau ---------- */
+.tabp .fcard,#scoList .fcard{border-radius:16px;padding:13px}
+.tabp .formgrid{gap:8px}
+
+/* ---------- barre d'onglets flottante ---------- */
+.tabs{left:50%;right:auto;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateX(-50%);
+  width:min(340px,calc(100% - 32px));border-radius:999px;padding-bottom:0;
+  background:rgba(20,20,24,.82);border:1px solid rgba(255,255,255,.08);
+  box-shadow:0 16px 34px -10px #000,inset 0 1px 0 rgba(255,255,255,.07)}
+.tabs button{height:56px;font-size:10.5px;gap:3px}
+.wrap{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
 </style>
 </head>
 <body>
@@ -215,63 +494,62 @@ ul.why .up{color:var(--good)} ul.why .dn{color:var(--warn)}
 
   <!-- ============ MATCHS ============ -->
   <section id="vMatches">
-    <h1>Matchs</h1>
-    <p class="status" id="status">Chargement…</p>
+    <div class="top"><h1>Prono</h1><p class="status" id="status">Chargement…</p></div>
     <div class="prog hidden" id="loadProg"><i></i></div>
     <p class="note hidden" id="loadMsg"></p>
+    <div class="dates" id="dates"></div>
+    <div class="chips" id="chips"></div>
+    <div id="hero"></div>
     <div id="list"></div>
   </section>
 
   <!-- ============ DÉTAIL ============ -->
   <section id="vDetail" class="hidden">
     <button class="back" id="back">← Retour</button>
-    <div class="panel">
-      <div class="mhead">
-        <div class="sd"><img id="ch" alt=""><span class="nm" id="nh"></span><span class="sc" id="sh"></span></div>
-        <div class="mid"><b id="mtime"></b><span id="mcomp"></span></div>
-        <div class="sd"><img id="ca" alt=""><span class="nm" id="na"></span><span class="sc" id="sa"></span></div>
-      </div>
+    <div class="dhero">
+      <div class="dside"><div id="ch"></div><span class="nm" id="nh"></span><span class="sc" id="sh"></span></div>
+      <div class="dmid"><span id="mcomp"></span><b id="mtime"></b></div>
+      <div class="dside"><div id="ca"></div><span class="nm" id="na"></span><span class="sc" id="sa"></span></div>
+    </div>
 
-      <div class="reco" id="reco"></div>
-      <p class="note" id="recoNote" style="margin-top:10px"></p>
+    <div class="dtabs" id="dtabs">
+      <button data-t="pr" class="on">Pronostic</button>
+      <button data-t="fo">Forme</button>
+      <button data-t="bu">Buteurs</button>
+      <button data-t="po">Pourquoi</button>
+    </div>
 
-      <div class="bar" id="bar"></div>
-      <div class="barkey" id="barkey"></div>
+    <div class="tabp" id="tab-pr">
+      <div class="verdict" id="verdict"></div>
       <div id="mismatch" class="flag hidden"></div>
+      <div class="tiles" id="tiles"></div>
+      <div class="panel"><h2>Marchés</h2><dl class="rows" id="markets"></dl></div>
+    </div>
 
-      <hr class="rule">
-      <h2>Forme · 5 derniers matchs</h2>
+    <div class="tabp hidden" id="tab-fo">
       <div class="formgrid" id="form5"></div>
+    </div>
 
-      <hr class="rule">
-      <h2>Marchés</h2>
-      <dl class="rows" id="markets"></dl>
+    <div class="tabp hidden" id="tab-bu">
+      <div id="scoList"></div>
+      <p class="note" id="recoNote" style="margin-top:12px"></p>
+      <p class="note" style="margin-top:8px">Seuls les joueurs ayant déjà marqué dans une compétition
+        chargée apparaissent, et l'API gratuite ne donne ni compositions ni blessures.</p>
+    </div>
 
-      <details>
-        <summary>Grille complète des scores</summary>
+    <div class="tabp hidden" id="tab-po">
+      <div class="panel"><ul class="why" id="why"></ul>
+        <p class="note" style="margin-top:10px">La ligne « Forme » compare les derniers matchs à ce que
+          le modèle attendait. Un écart faible est normal : les matchs récents pèsent déjà dans les notes.</p>
+      </div>
+      <div class="panel">
+        <h2>Grille des scores</h2>
         <p class="xg" id="xg"></p>
         <div class="gridbox"><table class="grid" id="grid"></table></div>
         <div class="axis"><span id="axH"></span><span id="axA"></span></div>
         <p class="note" id="spread" style="margin-top:10px"></p>
-      </details>
-
-      <details>
-        <summary>Tous les buteurs connus</summary>
-        <div id="scoList"></div>
-        <p class="note" style="margin-top:10px">Seuls les joueurs ayant déjà marqué dans une
-          compétition chargée apparaissent. Un attaquant encore muet est absent, et l'API gratuite
-          ne donne ni compositions ni blessures.</p>
-      </details>
-
-      <details>
-        <summary>Pourquoi ce pronostic</summary>
-        <ul class="why" id="why"></ul>
-        <p class="note" style="margin-top:10px">La ligne « Forme » compare les derniers matchs à ce que
-          le modèle attendait. Un écart faible est normal : les matchs récents pèsent déjà dans les
-          notes, donc une embellie durable finit absorbée plutôt que signalée ici.</p>
-      </details>
-
-      <details>
+      </div>
+      <details class="panel">
         <summary>Changer d'affiche</summary>
         <div style="display:grid;gap:8px;margin-top:10px">
           <select id="home" aria-label="Domicile"></select>
@@ -462,7 +740,7 @@ ul.why .up{color:var(--good)} ul.why .dn{color:var(--warn)}
     </div>
 
     <p class="note" style="text-align:center;margin-top:20px">
-      Prono v3.0 — Poisson bivarié, correction Dixon-Coles.<br>
+      Prono v6.0 — Poisson bivarié, correction Dixon-Coles.<br>
       football-data.org · football-data.co.uk · clubelo.com
     </p>
   </section>
@@ -756,9 +1034,15 @@ const state={results:[],fixtures:[],teams:new Map(),preds:{},model:null,
 function loadLocal(){
   state.cfg=Object.assign({comps:DEFAULT_COMPS,show:null,hl:250,reg:20,key:'',remember:false,
                            depth:2,guess:false,brk:0.7}, store.get(K.cfg,{}));
+  // Compétitions retirées depuis (sélections nationales) : on les oublie proprement
+  const connues=new Set(COMPS.map(x=>x[0]));
+  state.cfg.comps=(state.cfg.comps||[]).filter(c=>connues.has(c));
+  if(Array.isArray(state.cfg.show)) state.cfg.show=state.cfg.show.filter(c=>connues.has(c));
   if(!Array.isArray(state.cfg.show)) state.cfg.show=state.cfg.comps.slice();
   state.results=(store.get(K.res,[])||[]).map(a=>({t:a[0],home:a[1],away:a[2],hg:a[3],ag:a[4],c:a[5]}));
   state.fixtures=(store.get(K.fix,[])||[]).map(a=>({t:a[0],home:a[1],away:a[2],c:a[3]}));
+  state.results=state.results.filter(r=>connues.has(r.c));
+  state.fixtures=state.fixtures.filter(f=>connues.has(f.c));
   state.teams=new Map(Object.entries(store.get(K.team,{})));
   state.preds=store.get(K.preds,{})||{};
   state.scRaw=store.get(K.sc,{})||{};
@@ -1675,123 +1959,213 @@ function dayLabel(t){
 }
 const hhmm=t=>new Date(t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
 
-function card(f,kind){
+/* ---------- noms courts pour l'habillage TV ---------- */
+const shortName=n=>String(n)
+  .replace(/\s+\d{4}$/,'')
+  .replace(/\s+(FC|AFC|CF|SC)$/,'')
+  .replace(/^(FC|AFC|CF)\s+/,'')
+  .trim()||n;
+const pctI=v=>Math.round(v*100);
+
+/* ---------- écusson en relief ----------
+   La même image est empilée en couches assombries, décalées en profondeur :
+   l'écusson prend une épaisseur de médaille. Un reflet, découpé à la forme
+   exacte du logo, passe par-dessus. */
+function crest3d(n,size,turn,layers){
+  const c=crest(n);
+  const ini=esc(String(n).replace(/\b(FC|AFC|CF|SC|AC|AS|SSC|RC|OGC|SK|FK|CA|RCD)\b/g,'')
+    .trim().split(/\s+/).map(w=>w[0]||'').join('').slice(0,3).toUpperCase());
+  const L=layers??6;
+  let couches='';
+  if(c){
+    const u=esc(c);
+    for(let i=L;i>=1;i--) couches+=`<img class="c3l" style="--z:${i}" src="${u}" alt="" loading="lazy">`;
+    couches+=`<img class="c3f" src="${u}" alt="" loading="lazy" onerror="this.closest('.c3').classList.add('noimg')">`;
+    couches+=`<i class="c3gl" style="-webkit-mask-image:url('${u}');mask-image:url('${u}')"></i>`;
+  }
+  return `<div class="c3${c?'':' nocrest'}" style="--s:${size}px;--turn:${turn}deg">`+
+    `<div class="c3in">${couches}</div><div class="c3x">${ini}</div><i class="c3sh"></i></div>`;
+}
+
+const tugHtml=(probs,big)=>
+  `<div class="tug${big?' big':''}"><i class="h" style="flex:${probs[0]}"></i>`+
+  `<i class="d" style="flex:${probs[1]}"></i><i class="a" style="flex:${probs[2]}"></i></div>`;
+
+/* ---------- une ligne de match, en miroir ---------- */
+function row(f,kind,i){
   const m=state.model;
-  const p=m?predictAny(m,f.home,f.away,false):null;
-  const conf=m?confidence(m,f.home,f.away):null;
   const pred=state.preds[pkey(f)];
-  const done=kind==='done', wait=kind==='wait', live=kind==='live'||wait;
+  const done=kind==='done', wait=kind==='wait', live=kind==='live';
+  const avant=!done&&!live&&!wait;
+  const p=(avant&&m)?predictAny(m,f.home,f.away,false):null;
+  const conf=m?confidence(m,f.home,f.away):null;
+  // avant le match : le calcul du jour ; ensuite : le pronostic figé
+  const probs=p?[p.home,p.draw,p.away]:(pred?pred.p:null);
 
   let badge='';
   if(done&&pred){
     const o=f.hg>f.ag?0:f.hg===f.ag?1:2;
     const best=pred.p.indexOf(Math.max(...pred.p));
     badge=`<span class="badge ${best===o?'ok':'ko'}">${best===o?'✓':'✗'}</span>`;
-  }else if(!done&&conf){
+  }else if(avant&&conf){
     badge=`<span class="badge ${conf.grade.toLowerCase()}">${conf.grade}</span>`;
   }
 
-  const head = wait ? `<span class="pill"><i></i>EN COURS</span>`
-    : live ? `<span class="pill"><i></i>${f.pause?'MI-TEMPS':'EN DIRECT'}</span>`
-    : done ? `Terminé · ${hhmm(f.t)}`
-    : hhmm(f.t);
+  let mid;
+  if(wait) mid=`<span class="pill"><i></i>EN COURS</span><div class="s">·</div>`;
+  else if(live) mid=`<span class="pill"><i></i>${f.pause?'MI-TEMPS':'EN DIRECT'}</span><div class="s">${f.hg} – ${f.ag}</div>`;
+  else if(done) mid=`<div class="t">Terminé</div><div class="s">${f.hg} – ${f.ag}</div>`;
+  else mid=`<div class="t">${hhmm(f.t)}</div>`;
 
-  // en direct et après match, le score prime ; avant, la probabilité
-  const right=(side)=>{
-    if(wait) return `<span class="sc">·</span>`;
-    if(done||live) return `<span class="sc">${side==='h'?f.hg:f.ag}</span>`;
-    return `<span class="pr">${p?pct(side==='h'?p.home:p.away):'—'}</span>`;
-  };
-  const nul = (done||live) && !wait && f.hg===f.ag;
-  const favH = wait||nul ? false : (done||live) ? f.hg>f.ag : (!!p&&p.home>=p.away);
-  const favA = wait||nul ? false : (done||live) ? f.ag>f.hg : (!!p&&p.away>p.home);
-  // à égalité, personne n'est en tête : on ne grise rien
-  const dim = s2=>(done||live)&&!wait&&!nul&&!s2;
-  const line=(nm,fav,side)=>
-    `<div class="side${fav?' fav':''}${dim(fav)?' dim':''}">${img(nm)}
-      <span class="nm">${esc(nm)}</span>${right(side)}</div>`;
+  const nul=(done||live)&&f.hg===f.ag;
+  const dimH=(done||live)&&!nul&&f.hg<f.ag, dimA=(done||live)&&!nul&&f.ag<f.hg;
 
   let foot;
-  if(wait&&!pred){ foot="coup d'envoi passé, score en cours de récupération"; }
+  if(wait&&!pred) foot="coup d'envoi passé, score en cours de récupération";
   else if(pred){
-    const names=[f.home,'Nul',f.away];
+    const names=[shortName(f.home),'le nul',shortName(f.away)];
     const b=pred.p.indexOf(Math.max(...pred.p));
-    foot=`annoncé avant le match : ${esc(names[b])} à ${(pred.p[b]*100).toFixed(0)} %`;
-  }else if(done||live){
-    foot='aucun pronostic enregistré avant le coup d\'envoi';
-  }else{
-    foot=conf?conf.txt:'en attente de données';
-  }
+    foot=`annoncé : ${esc(names[b])} à ${pctI(pred.p[b])} %`;
+  }else if(done||live) foot="aucun pronostic enregistré avant le coup d'envoi";
+  else foot=conf?esc(conf.txt):'en attente de données';
 
-  return `<button class="fx" data-k="${esc(f.t+'|'+f.home+'|'+f.away)}">
-    <div class="when"><span class="lft">${head}</span>${badge}</div>
-    ${line(f.home,favH,'h')}
-    ${line(f.away,favA,'a')}
-    ${(!done&&!live&&p)?`<div class="minibar"><i class="h" style="flex:${p.home}"></i><i class="d" style="flex:${p.draw}"></i><i class="a" style="flex:${p.away}"></i></div>`:''}
-    <div class="conf">${foot}</div>
+  const tug=probs?`<div class="tugr"><span class="xp h">${pctI(probs[0])}</span>${tugHtml(probs)}`+
+    `<span class="xp a">${pctI(probs[2])}</span></div>`:'';
+
+  return `<button class="mr" data-i="${i}">
+    <div class="mrt">
+      <div class="tm l${dimH?' dim':''}">${crest3d(f.home,28,16,2)}<span class="cn">${esc(shortName(f.home))}</span></div>
+      <div class="mid">${mid}</div>
+      <div class="tm r${dimA?' dim':''}"><span class="cn">${esc(shortName(f.away))}</span>${crest3d(f.away,28,-16,2)}</div>
+    </div>
+    ${tug}
+    <div class="mrf"><span>${foot}</span>${badge}</div>
   </button>`;
 }
 
-function renderList(){
-  const codes=new Set(shown());
-  const now=Date.now();
-  const live=state.live.filter(f=>codes.has(f.c)).sort((a,b)=>a.t-b.t);
-  const wait=enCours().filter(f=>codes.has(f.c)).sort((a,b)=>a.t-b.t);
-  const soon=state.fixtures.filter(f=>codes.has(f.c)&&f.t>now).sort((a,b)=>a.t-b.t);
-  const doneToday=state.results
-    .filter(r=>codes.has(r.c)&&r.t>now-20*3600000&&r.t<now)
-    .sort((a,b)=>b.t-a.t);
+/* ---------- le match à la une ---------- */
+function heroHtml(x){
+  const f=x.f, m=state.model;
+  const pred=state.preds[pkey(f)];
+  const p=(x.kind==='soon'&&m)?predictAny(m,f.home,f.away,false):null;
+  const probs=p?[p.home,p.draw,p.away]:(pred?pred.p:null);
+  let cd;
+  if(x.kind==='live') cd=`<span class="pill"><i></i>${f.pause?'MI-TEMPS':'EN DIRECT'}</span>`;
+  else{
+    const mn=Math.max(0,Math.round((f.t-Date.now())/60000));
+    cd= mn<60 ? `dans ${mn} min`
+      : mn<24*60 ? `dans ${Math.floor(mn/60)} h ${String(mn%60).padStart(2,'0')}`
+      : hhmm(f.t);
+  }
+  const mid=x.kind==='live'?`<div class="s">${f.hg} – ${f.ag}</div>`:`<div class="t">${hhmm(f.t)}</div>`;
+  return `<button class="hero" id="heroBtn">
+    <div class="hhead"><span>${compLogo(f.c)}À la une</span><span class="cd">${cd}</span></div>
+    <div class="hteams">
+      <div class="ht">${crest3d(f.home,62,24,6)}<span class="cn">${esc(shortName(f.home))}</span></div>
+      <div class="mid">${mid}</div>
+      <div class="ht">${crest3d(f.away,62,-24,6)}<span class="cn">${esc(shortName(f.away))}</span></div>
+    </div>
+    ${probs?`<div class="tugk"><span class="xp h">${pctI(probs[0])}</span><span>nul ${pctI(probs[1])}</span>`+
+      `<span class="xp a">${pctI(probs[2])}</span></div>${tugHtml(probs,true)}`:''}
+  </button>`;
+}
 
-  if(!live.length&&!wait.length&&!soon.length&&!doneToday.length){
+const dayKey=t=>{
+  const d=new Date(t);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+};
+
+function renderList(){
+  const codes=new Set(shown()), now=Date.now(), m=state.model;
+  const items=[];
+  for(const f of state.live) if(codes.has(f.c)) items.push({f,kind:'live'});
+  for(const f of enCours()) if(codes.has(f.c)) items.push({f,kind:'wait'});
+  for(const f of state.fixtures) if(codes.has(f.c)&&f.t>now) items.push({f,kind:'soon'});
+  for(const r of state.results) if(codes.has(r.c)&&r.t>now-20*3600000&&r.t<now) items.push({f:r,kind:'done'});
+
+  if(!items.length){
+    $('dates').innerHTML=''; $('chips').innerHTML=''; $('hero').innerHTML='';
     $('list').innerHTML=`<p class="empty">Aucun match dans les compétitions affichées.<br>
       Ouvre Réglages pour charger ou actualiser les données.</p>`;
     return;
   }
 
-  const idx=[];
-  const parComp=arr=>{
-    const g=new Map();
-    for(const f of arr){ if(!g.has(f.c)) g.set(f.c,[]); g.get(f.c).push(f); }
-    return [...g.entries()];
-  };
-  const bloc=(arr,kind)=>{
-    let out='';
-    for(const [c,list] of parComp(arr)){
-      out+=`<div class="comp">${compLogo(c)}${esc(compName(c))}</div>`;
-      for(const f of list){ out+=card(f,kind); idx.push(f); }
-    }
-    return out;
-  };
+  // ---- bande de dates ----
+  const days=new Map();
+  for(const x of items){ const k=dayKey(x.f.t); if(!days.has(k)) days.set(k,[]); days.get(k).push(x); }
+  const keys=[...days.keys()].sort();
+  const today=dayKey(now);
+  if(!state.ui) state.ui={day:null,comp:'all'};
+  if(!days.has(state.ui.day))
+    state.ui.day=days.has(today)?today:(keys.find(k=>k>=today)||keys[keys.length-1]);
+  const t0=new Date(today+'T00:00:00').getTime();
+  $('dates').innerHTML=keys.map(k=>{
+    const d=new Date(k+'T12:00:00');
+    const diff=Math.round((new Date(k+'T00:00:00').getTime()-t0)/DAY);
+    let lab=diff===0?'Auj.':diff===1?'Dem.':diff===-1?'Hier'
+      :d.toLocaleDateString('fr-FR',{weekday:'short'}).replace('.','');
+    lab=lab.charAt(0).toUpperCase()+lab.slice(1);
+    const vif=days.get(k).some(x=>x.kind==='live'||x.kind==='wait');
+    return `<button class="dt${k===state.ui.day?' on':''}" data-d="${k}"><span>${lab}</span>`+
+      `<b>${d.getDate()}</b>${vif?'<i class="lv"></i>':''}</button>`;
+  }).join('');
 
+  // ---- puces de compétitions ----
+  const dayItems=days.get(state.ui.day);
+  const comps=[...new Set(dayItems.map(x=>x.f.c))];
+  if(state.ui.comp!=='all'&&!comps.includes(state.ui.comp)) state.ui.comp='all';
+  const seule=comps.length===1;
+  $('chips').innerHTML=(seule?'':`<button class="chip${state.ui.comp==='all'?' on':''}" data-c="all">Tout</button>`)+
+    comps.map(c=>`<button class="chip${state.ui.comp===c||seule?' on':''}" data-c="${c}">${compLogo(c)}${esc(compName(c))}</button>`).join('');
+
+  const vis=dayItems.filter(x=>state.ui.comp==='all'||x.f.c===state.ui.comp);
+
+  // ---- à la une : un match en direct, sinon le plus gros choc à venir ----
+  const force=t=>{ const i=m?m.idx.get(t):undefined; return i===undefined?-9:m.att[i]+m.def[i]; };
+  const direct=vis.filter(x=>x.kind==='live');
+  const pool=direct.length?direct:vis.filter(x=>x.kind==='soon');
+  const hero=pool.length?pool.reduce((b,x)=>
+    force(x.f.home)+force(x.f.away)>force(b.f.home)+force(b.f.away)?x:b):null;
+  $('hero').innerHTML=hero?heroHtml(hero):'';
+  if(hero) $('heroBtn').onclick=()=>openDetail(hero.f.home,hero.f.away,hero.f);
+
+  // ---- les autres matchs, groupés par compétition ----
+  const pri={live:0,wait:1,soon:2,done:3};
+  const rest=vis.filter(x=>x!==hero).sort((a,b)=>pri[a.kind]-pri[b.kind]||a.f.t-b.f.t);
+  const groups=new Map();
+  for(const x of rest){ if(!groups.has(x.f.c)) groups.set(x.f.c,[]); groups.get(x.f.c).push(x); }
+  const idx=[];
   let html='';
-  if(live.length||wait.length){
-    html+=`<div class="day live">En direct</div>`;
-    html+=bloc(live,'live')+bloc(wait,'wait');
+  for(const [c,l] of groups){
+    if(state.ui.comp==='all'&&!seule) html+=`<div class="comp">${compLogo(c)}${esc(compName(c))}</div>`;
+    for(const x of l){ html+=row(x.f,x.kind,idx.length); idx.push(x); }
   }
-  if(doneToday.length){
-    html+=`<div class="day">Terminés récemment</div>`;
-    html+=bloc(doneToday,'done');
-  }
-  let day='';
-  for(const [d,list] of (()=>{
-    const g=new Map();
-    for(const f of soon){ const k=dayLabel(f.t); if(!g.has(k)) g.set(k,[]); g.get(k).push(f); }
-    return [...g.entries()];
-  })()){
-    html+=`<div class="day">${esc(d)}</div>`;
-    html+=bloc(list,'soon');
-  }
+  if(!rest.length&&!hero) html=`<p class="empty">Aucun match ce jour-là.</p>`;
   $('list').innerHTML=html;
-  $('list').querySelectorAll('.fx').forEach((b,i)=>b.onclick=()=>{
-    const f=idx[i];
-    openDetail(f.home,f.away,f);
+
+  $('dates').querySelectorAll('.dt').forEach(b=>b.onclick=()=>{
+    state.ui.day=b.dataset.d; state.ui.comp='all'; renderList(); window.scrollTo(0,0);
   });
+  $('chips').querySelectorAll('.chip').forEach(b=>b.onclick=()=>{
+    state.ui.comp=b.dataset.c; renderList();
+  });
+  $('list').querySelectorAll('.mr').forEach(b=>b.onclick=()=>{
+    const x=idx[+b.dataset.i];
+    openDetail(x.f.home,x.f.away,x.f);
+  });
+}
+
+function setDtab(t){
+  state.dtab=t;
+  document.querySelectorAll('#dtabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  ['pr','fo','bu','po'].forEach(k=>$('tab-'+k).classList.toggle('hidden',k!==t));
 }
 
 function openDetail(h,a,it,frozen){
   state.sel={home:h,away:a,it:it||null,frozen:frozen||null,
              from:frozen?'history':'matches'};
   if(state.model){ $('home').value=h; $('away').value=a; }
+  setDtab('pr');
   show('vDetail');
   renderDetail();
   window.scrollTo(0,0);
@@ -1845,41 +2219,6 @@ function scorerProbs(team,lam){
   return raw.map(x=>({n:x.n, team, g:x.g, m:x.m, pg:x.pg, pm:x.pm, venu:x.venu,
                       corrige:x.corrige, viaSquad:x.viaSquad, p:1-Math.exp(-x.lam*k)}))
             .filter(x=>x.p>=0.04);
-}
-
-function renderReco(h,a,p){
-  const outs=[[h,p.home],['Match nul',p.draw],[a,p.away]].sort((x,y)=>y[1]-x[1]);
-  const over=p.over[2.5]>=0.5;
-  const totP=over?p.over[2.5]:1-p.over[2.5];
-  const exp=(p.lh+p.la);
-  const top=p.top[0];
-  const sc=[...scorerProbs(h,p.lh),...scorerProbs(a,p.la)]
-    .sort((x,y)=>y.p-x.p).slice(0,3);
-
-  const row=(k,v)=>`<div class="r"><span class="k">${k}</span><span class="v">${v}</span></div>`;
-  let html='';
-  html+=row('Vainqueur',`${esc(outs[0][0])} <em>${(outs[0][1]*100).toFixed(0)} %</em>`);
-  html+=row('Total de buts',
-    `${over?'Plus':'Moins'} de 2,5 buts <em>${(totP*100).toFixed(0)} %</em>`+
-    `<small>${exp.toFixed(2)} buts attendus dans le match</small>`);
-  html+=row('Score le plus probable',`${top.x}–${top.y} <em>${(top.p*100).toFixed(1)} %</em>`);
-  html+=row('Les deux marquent',
-    `${p.btts>=0.5?'Oui':'Non'} <em>${((p.btts>=0.5?p.btts:1-p.btts)*100).toFixed(0)} %</em>`);
-  if(sc.length){
-    html+=row('Buteur',sc.map(x=>
-      `${esc(x.n)} <em>${(x.p*100).toFixed(0)} %</em>`+
-      `<small>${x.g} but${x.g>1?'s':''} en ${x.m} match${x.m>1?'s':''}`+
-      `${x.pm?` · ${x.pg} en ${x.pm} la saison passée${x.venu?` à ${esc(x.venu)}`:''}`:''}</small>`).join('')); 
-  }else{
-    html+=row('Buteur',state.scorersOk===false
-      ? '<small>non fourni par ton plan</small>'
-      : '<small>données de buteurs pas encore chargées</small>');
-  }
-  $('reco').innerHTML=html;
-
-  $('recoNote').textContent = sc.length
-    ? "Probabilité qu'un joueur marque au moins une fois, estimée à partir de son rythme de but cette saison, ajusté aux buts attendus de son équipe dans ce match. L'API gratuite ne donne ni compositions ni blessures : un joueur absent ou remplaçant apparaîtra quand même."
-    : "";
 }
 
 function renderWhy(h,a,p){
@@ -1975,16 +2314,53 @@ function renderScorers(h,a,p){
   $('scoList').innerHTML=bloc(h,p.lh)+bloc(a,p.la);
 }
 
+function renderReco(h,a,p,c,archive){
+  const issues=[{k:'h',n:h,v:p.home},{k:'d',n:null,v:p.draw},{k:'a',n:a,v:p.away}]
+    .sort((x,y)=>y.v-x.v);
+  const w=issues[0];
+  // « gagne » seulement quand le modèle y croit vraiment ; sinon, un avantage
+  const titre=w.k==='d'?'Match nul':w.v>=0.55?`${shortName(w.n)} gagne`:`Avantage ${shortName(w.n)}`;
+  const couleur=w.k==='h'?'var(--sodium)':w.k==='d'?'#B9BCC6':'var(--cyan)';
+  const badge= archive ? `<span class="vtag">Archivé</span>`
+    : c ? `<span class="vtag g-${c.grade.toLowerCase()}">${c.grade}${c.few>=1?` · ${c.few.toFixed(0)} matchs`:''}</span>`
+    : '';
+  const serre=Math.abs(p.home-p.away)<0.1&&w.k!=='d';
+
+  // le pourcentage du vainqueur, gravé en filigrane derrière le verdict
+  $('verdict').innerHTML=
+    `<span class="vbg" style="--vc:${couleur}" aria-hidden="true">${pctI(w.v)}<small>%</small></span>
+     <div class="vhead"><span>Le verdict</span>${badge}</div>
+     <div class="vtitle">${esc(titre)}</div>
+     <div class="vsub">${p.lh.toFixed(2)} – ${p.la.toFixed(2)} buts attendus${serre?' · match serré':''}</div>
+     <div class="tugk"><span class="xp h">${pctI(p.home)}</span><span>nul ${pctI(p.draw)}</span>`+
+    `<span class="xp a">${pctI(p.away)}</span></div>${tugHtml([p.home,p.draw,p.away],true)}`;
+
+  const over=p.over[2.5]>=0.5, totP=over?p.over[2.5]:1-p.over[2.5];
+  const top=p.top[0];
+  const sc=[...scorerProbs(h,p.lh),...scorerProbs(a,p.la)].sort((x,y)=>y.p-x.p);
+  const tile=(k,v)=>`<div class="tile"><span>${k}</span><b>${v}</b></div>`;
+  $('tiles').innerHTML=
+    tile(`${over?'Plus':'Moins'} de 2,5 buts`,`${pctI(totP)} %`)+
+    tile('Les deux marquent',`${p.btts>=0.5?'Oui':'Non'} ${pctI(p.btts>=0.5?p.btts:1-p.btts)} %`)+
+    tile('Score le plus probable',`${top.x} – ${top.y}`)+
+    tile('Buteur principal', sc.length
+      ? `<span class="cn">${esc(sc[0].n)}</span> <em>${pctI(sc[0].p)} %</em>`
+      : `<span class="nb">${state.scorersOk===false?'non fourni par ton plan':'pas encore chargé'}</span>`);
+
+  $('recoNote').textContent=sc.length
+    ? "Probabilité qu'un joueur marque au moins une fois, estimée à partir de son rythme de but, ajusté aux buts attendus de son équipe dans ce match."
+    : '';
+}
+
 function renderDetail(){
-  const m=state.model;              // la visibilité est gérée par show()
+  const m=state.model;
   if(!m||!state.sel) return;
   const h=$('home').value||state.sel.home, a=$('away').value||state.sel.away;
   const it=state.sel.it;
 
-  $('ch').src=crest(h)||''; $('ca').src=crest(a)||'';
-  $('ch').style.visibility=crest(h)?'visible':'hidden';
-  $('ca').style.visibility=crest(a)?'visible':'hidden';
-  $('nh').textContent=h; $('na').textContent=a;
+  $('ch').innerHTML=crest3d(h,76,24,7);
+  $('ca').innerHTML=crest3d(a,76,-24,7);
+  $('nh').textContent=shortName(h); $('na').textContent=shortName(a);
   const done=it&&it.hg!==undefined&&it.home===h&&it.away===a;
   const enDirect=!!(it&&state.live.some(l=>l.home===it.home&&l.away===it.away&&l.t===it.t));
   const pause=enDirect&&it.pause;
@@ -1995,20 +2371,19 @@ function renderDetail(){
       : pause ? 'Mi-temps'
       : enDirect ? 'En direct'
       : done ? 'Terminé'
-      : d.toLocaleString('fr-FR',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-    $('mcomp').innerHTML=compLogo(it.c)+esc(compName(it.c));
+      : hhmm(it.t);
+    $('mcomp').innerHTML=compLogo(it.c)+esc(compName(it.c))+
+      (!done&&!enDirect&&state.sel.from!=='history'
+        ? `<span class="dd">${esc(d.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'}))}</span>`:'');
   }else{ $('mtime').textContent=''; $('mcomp').textContent=''; }
 
   const vide=()=>{
-    ['grid','bar','barkey','markets','reco','why','spread','form5','scoList'].forEach(id=>$(id).innerHTML='');
+    ['grid','markets','verdict','tiles','why','spread','form5','scoList'].forEach(id=>$(id).innerHTML='');
     $('recoNote').textContent='';
   };
   if(h===a){ $('xg').textContent='Choisis deux équipes différentes.'; vide(); return; }
 
-  // Pronostic ouvert depuis l'historique : on rejoue exactement celui d'avant
-  // le match, reconstruit à partir des buts attendus figés à l'époque.
-  // Match déjà commencé : on affiche le pronostic tel qu'il était avant le
-  // coup d'envoi, pas un recalcul qui tiendrait compte de ce qui vient de se passer.
+  // Match commencé ou archivé : on rejoue le pronostic figé avant le coup d'envoi.
   let fz=state.sel.frozen;
   if(!fz&&it&&it.t<=Date.now()){
     const cand=state.preds[pkey(it)];
@@ -2027,8 +2402,7 @@ function renderDetail(){
     vide();
     $('xg').textContent='';
     $('mismatch').innerHTML=`Ce pronostic a été enregistré avant que l'app ne garde le détail complet.
-      Annoncé : ${esc(fz.home)} ${(fz.p[0]*100).toFixed(0)} %, nul ${(fz.p[1]*100).toFixed(0)} %,
-      ${esc(fz.away)} ${(fz.p[2]*100).toFixed(0)} %.`;
+      Annoncé : ${esc(fz.home)} ${pctI(fz.p[0])} %, nul ${pctI(fz.p[1])} %, ${esc(fz.away)} ${pctI(fz.p[2])} %.`;
     $('mismatch').classList.remove('hidden');
     return;
   }
@@ -2042,7 +2416,8 @@ function renderDetail(){
     return;
   }
 
-  renderReco(h,a,p);
+  const c=fz?null:confidence(m,h,a);
+  renderReco(h,a,p,c,!!fz);
   renderScorers(h,a,p);
   if(fz){
     const d=new Date(fz.upd||fz.t);
@@ -2054,32 +2429,26 @@ function renderDetail(){
     renderForm5(h,a);
   }
 
-  $('bar').innerHTML=
-    `<div class="h" style="flex:${p.home}">${p.home>0.12?(p.home*100).toFixed(0)+'%':''}</div>`+
-    `<div class="d" style="flex:${p.draw}">${p.draw>0.12?(p.draw*100).toFixed(0)+'%':''}</div>`+
-    `<div class="a" style="flex:${p.away}">${p.away>0.12?(p.away*100).toFixed(0)+'%':''}</div>`;
-  $('barkey').innerHTML=`<span>${esc(h)} ${pct(p.home)}</span><span>nul ${pct(p.draw)}</span><span>${esc(a)} ${pct(p.away)}</span>`;
-
   const o=p.over;
   $('markets').innerHTML=[
     ['Plus de 1,5 but',o[1.5]],['Plus de 2,5 buts',o[2.5]],['Plus de 3,5 buts',o[3.5]],
     ['Les deux équipes marquent',p.btts],
-    [`${h} ou nul`,p.home+p.draw],[`${a} ou nul`,p.away+p.draw]
+    [`${shortName(h)} ou nul`,p.home+p.draw],[`${shortName(a)} ou nul`,p.away+p.draw]
   ].map(([k,v])=>`<dt>${esc(k)}</dt><dd>${pct(v)}</dd>`).join('');
 
   $('xg').innerHTML=`Buts attendus <b>${p.lh.toFixed(2)}</b> – <b>${p.la.toFixed(2)}</b>`;
-  $('axH').textContent=`buts de ${h} ↓`;
-  $('axA').textContent=`buts de ${a} →`;
+  $('axH').textContent=`buts de ${shortName(h)} ↓`;
+  $('axA').textContent=`buts de ${shortName(a)} →`;
   renderGrid(p);
   {
     const nb={h:0,d:0,a:0};
     for(let x=0;x<p.grid.length;x++) for(let y=0;y<p.grid.length;y++)
       if(p.grid[x][y]>=0.01) nb[x>y?'h':x===y?'d':'a']++;
-    const tot={h:p.home,d:p.draw,a:p.away}, nom={h:h,d:'le nul',a:a};
+    const tot={h:p.home,d:p.draw,a:p.away}, nom={h:shortName(h),d:'le nul',a:shortName(a)};
     const fav=Object.keys(tot).reduce((x,y)=>tot[x]>=tot[y]?x:y);
     const t0=p.top[0], tete=t0.x>t0.y?'h':t0.x===t0.y?'d':'a';
     $('spread').innerHTML= tete===fav
-      ? `Ambre : victoire de ${esc(h)}. Gris : nul. Bleu : victoire de ${esc(a)}.`
+      ? `Ambre : victoire de ${esc(nom.h)}. Gris : nul. Bleu : victoire de ${esc(nom.a)}.`
       : `Le score le plus probable est ${t0.x}–${t0.y}, mais ${esc(nom[fav])} reste favori : `+
         `${tete==='d'?'le nul ne peut prendre que':'cette issue se répartit sur'} ${nb[tete]} score${nb[tete]>1?'s':''} `+
         `plausible${nb[tete]>1?'s':''}, contre ${nb[fav]} pour ${esc(nom[fav])}.`;
@@ -2089,7 +2458,7 @@ function renderDetail(){
   else renderWhy(h,a,p);
 
   if(fz){ $('mismatch').classList.add('hidden'); return; }
-  const c=confidence(m,h,a), warn=[];
+  const warn=[];
   if(c&&c.unknown&&c.unknown.length) warn.push(`<b>${esc(c.unknown.join('</b> et <b>'))}</b> n'a aucun match dans les données chargées : le modèle le remplace par une équipe moyenne du lot. L'écart réel est probablement plus marqué. Ce pronostic n'entre pas dans l'historique.`);
   else if(c&&c.elo&&c.few<1) warn.push(`Une des deux équipes n'a aucun match dans les données : sa force vient d'un niveau réglé à la main ou d'une note Elo, pas d'un historique.`);
   else if(c&&!c.link) warn.push(`Aucune chaîne de matchs ne relie <b>${esc(h)}</b> à <b>${esc(a)}</b> dans les données chargées : leurs forces sont sur deux échelles séparées, ce pronostic ne veut rien dire.`);
@@ -2333,6 +2702,7 @@ $('runTune').onclick=async()=>{
    BRANCHEMENTS
    ============================================================ */
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>show(b.dataset.v));
+document.querySelectorAll('#dtabs button').forEach(b=>b.onclick=()=>setDtab(b.dataset.t));
 $('back').onclick=()=>show(state.sel&&state.sel.from==='history'?'vHistory':'vMatches');
 $('reload').onclick=()=>load(false);
 $('hard').onclick=()=>load(true);
