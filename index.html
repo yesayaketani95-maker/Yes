@@ -496,10 +496,10 @@ select,input[type=text],input[type=password],input[type=number],textarea{
 .top .status{text-align:left}
 
 /* logo de la compétition en filigrane derrière l'affiche */
-.dhero{position:relative;overflow:hidden;isolation:isolate}
-.dhero::before{content:'';position:absolute;inset:-12% 16%;z-index:-1;pointer-events:none;
+.dhero,.hero{position:relative;overflow:hidden;isolation:isolate}
+.dhero::before,.hero::before{content:'';position:absolute;inset:-12% 16%;z-index:-1;pointer-events:none;
   background:var(--cl,none) center/contain no-repeat;
-  filter:grayscale(1) brightness(0) invert(1);opacity:.075;
+  filter:grayscale(1) brightness(0) invert(1);opacity:.13;
   transform:rotate(-9deg) scale(1.2);
   -webkit-mask-image:radial-gradient(closest-side,#000 55%,transparent);
   mask-image:radial-gradient(closest-side,#000 55%,transparent)}
@@ -513,7 +513,7 @@ select,input[type=text],input[type=password],input[type=number],textarea{
   background:linear-gradient(180deg,rgba(245,165,36,.3),transparent 82%);
   -webkit-background-clip:text;background-clip:text}
 .tbg small{font-size:.42em;letter-spacing:0;margin-left:1px}
-.tile b{font-size:21px;padding-right:40px}
+.tile b{font-size:19px;line-height:1.15;white-space:normal;overflow:visible}
 
 /* marchés : une barre proportionnelle derrière chaque ligne */
 #markets.rows{display:block}
@@ -796,7 +796,7 @@ select,input[type=text],input[type=password],input[type=number],textarea{
     </div>
 
     <p class="note" style="text-align:center;margin-top:20px">
-      Prono v6.1 — Poisson bivarié, correction Dixon-Coles.<br>
+      Prono v6.2 — Poisson bivarié, correction Dixon-Coles.<br>
       football-data.org · football-data.co.uk · clubelo.com
     </p>
   </section>
@@ -2114,7 +2114,9 @@ function heroHtml(x){
       : hhmm(f.t);
   }
   const mid=x.kind==='live'?`<div class="s">${f.hg} – ${f.ag}</div>`:`<div class="t">${hhmm(f.t)}</div>`;
-  return `<button class="hero" id="heroBtn">
+  const lg=state.clogo&&state.clogo[f.c];
+  const cl=lg?` style="--cl:url(&quot;${esc(String(lg).replace(/"/g,'%22'))}&quot;)"`:'';
+  return `<button class="hero" id="heroBtn"${cl}>
     <div class="hhead"><span>${compLogo(f.c)}À la une</span><span class="cd">${cd}</span></div>
     <div class="hteams">
       <div class="ht">${crest3d(f.home,62,24,6)}<span class="cn">${esc(shortName(f.home))}</span></div>
