@@ -661,6 +661,56 @@ select,input[type=text],input[type=password],input[type=number],textarea{
   @keyframes sortG{to{transform:translateX(-90%) rotate(-25deg) scale(.6);opacity:0}}
   @keyframes sortD{to{transform:translateX(90%) rotate(25deg) scale(.6);opacity:0}}
 }
+
+/* ================================================================
+   v6.6 — onglet Compo
+   ================================================================ */
+.dtabs button{font-size:11.5px;padding:9px 0}
+.cswitch{display:flex;gap:4px;padding:4px;border-radius:14px;background:#050506;
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.9);margin-bottom:10px}
+.cswitch button{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;background:none;
+  border:0;color:var(--sage);padding:8px 6px;border-radius:10px;cursor:pointer;min-width:0}
+.cswitch button .cn{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cswitch button.on{color:var(--chalk);background:linear-gradient(180deg,#25252B,#16161A);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 10px -6px #000}
+.cetat{display:flex;align-items:center;gap:7px;color:var(--sage);font-size:12px;margin:0 2px 10px}
+.cdot{width:7px;height:7px;border-radius:50%;background:#8C8C93;flex:0 0 7px}
+.cdot.ok{background:var(--good)} .cdot.ko{background:var(--warn)}
+.cpitch{position:relative;width:100%;aspect-ratio:68/100;border-radius:16px;overflow:hidden;
+  background:repeating-linear-gradient(180deg,#0f2a14 0 10%,#0c2311 10% 20%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),0 22px 40px -22px #000}
+.clines{position:absolute;inset:0;width:100%;height:100%}
+.pp{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;width:72px}
+.pp .av{position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center}
+.pp .av img{position:absolute;inset:0;width:44px;height:44px;border-radius:50%;object-fit:cover;
+  background:#F4F4F2;box-shadow:0 0 0 2px rgba(255,255,255,.85),0 6px 12px rgba(0,0,0,.7)}
+.pp .jer{filter:drop-shadow(0 4px 5px rgba(0,0,0,.8))}
+.pp .pn{margin-top:3px;font-size:11px;line-height:1.2;padding:2px 6px;border-radius:6px;background:rgba(0,0,0,.75);
+  white-space:nowrap;max-width:88px;overflow:hidden;text-overflow:ellipsis;
+  font-variation-settings:'wdth' 80;font-weight:600}
+.pp .pn b{color:var(--sage);font-weight:700;margin-right:1px}
+.bq{display:inline-flex;align-items:center;gap:2px;font-size:11px;font-weight:800;color:#1b1203;
+  background:var(--sodium);border-radius:10px;padding:1px 6px 1px 3px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 3px 6px rgba(0,0,0,.6)}
+.bq sup{font-size:9px;margin:-4px 1px 0 -3px}
+.pp .bq{position:absolute;top:-6px;right:-2px}
+.csubs,.cgrp{margin-top:12px;border-radius:16px;padding:10px 12px;background:#0D0D0F;
+  border:1px solid rgba(255,255,255,.06)}
+.cgrp:first-child{margin-top:0}
+.cst{color:var(--sage);font-size:12px;font-weight:600;margin-bottom:4px}
+.sub{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--line);font-size:14px}
+.sub:nth-child(2){border-top:0}
+.sub span:not(.bq){flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (prefers-reduced-motion:no-preference){
+  .pp{animation:ppop .45s cubic-bezier(.2,1.35,.4,1) backwards;animation-delay:var(--d,0ms)}
+  @keyframes ppop{from{opacity:0;transform:translate(-50%,-20%) scale(.4)}}
+  .cgrp .sub{animation:sfade .35s ease backwards;animation-delay:var(--d,0ms)}
+  @keyframes sfade{from{opacity:0;transform:translateX(-8px)}}
+  .cpw.bascule-out{animation:bOut .19s cubic-bezier(.4,0,1,1) forwards}
+  .cpw.bascule-in{animation:bIn .5s cubic-bezier(.2,.8,.2,1)}
+  @keyframes bOut{to{opacity:.15;transform:perspective(900px) rotateY(75deg) scale(.95)}}
+  @keyframes bIn{from{opacity:.15;transform:perspective(900px) rotateY(-75deg) scale(.95)}}
+}
 </style>
 </head>
 <body>
@@ -690,6 +740,7 @@ select,input[type=text],input[type=password],input[type=number],textarea{
     <div class="dtabs" id="dtabs">
       <button data-t="pr" class="on">Pronostic</button>
       <button data-t="fo">Forme</button>
+      <button data-t="co">Compo</button>
       <button data-t="bu">Buteurs</button>
       <button data-t="po">Pourquoi</button>
     </div>
@@ -700,6 +751,8 @@ select,input[type=text],input[type=password],input[type=number],textarea{
       <div class="tiles" id="tiles"></div>
       <div class="panel"><h2>Marchés</h2><dl class="rows" id="markets"></dl></div>
     </div>
+
+    <div class="tabp hidden" id="tab-co"><div id="compo"></div></div>
 
     <div class="tabp hidden" id="tab-fo">
       <div class="formgrid" id="form5"></div>
@@ -912,7 +965,7 @@ select,input[type=text],input[type=password],input[type=number],textarea{
     </div>
 
     <p class="note" style="text-align:center;margin-top:20px">
-      Prono v6.5 — Poisson bivarié, correction Dixon-Coles.<br>
+      Prono v6.6 — Poisson bivarié, correction Dixon-Coles.<br>
       football-data.org · football-data.co.uk · clubelo.com
     </p>
   </section>
@@ -1242,6 +1295,10 @@ function loadLocal(){
   state.clogo=store.get(K.clogo,{})||{};
   state.pfix=store.get(K.pfix,{})||{};
   state.squad=store.get(K.squad,{})||{};
+  state.roster=store.get('prono.roster',{})||{};
+  state.kit=store.get('prono.kit',{})||{};
+  state.lineups=store.get('prono.lu',{})||{};
+  state.afDay={};
   if(Object.keys(state.squad).length) state.squadOk=true;
   state.elo=store.get(K.elo,[])||[];
   state.ealias=store.get(K.ealias,{})||{};
@@ -1259,7 +1316,14 @@ const saveLive=()=>store.set(K.live,{ts:Date.now(),rows:state.live});
 const saveRef=()=>store.set(K.ref,state.ref);
 const saveClogo=()=>store.set(K.clogo,state.clogo);
 const savePfix=()=>{ store.set(K.pfix,state.pfix); state.pidx=null; };
-const saveSquad=()=>{ store.set(K.squad,state.squad); state.pidx=null; };
+const saveSquad=()=>{ store.set(K.squad,state.squad); store.set('prono.roster',state.roster);
+  store.set('prono.kit',state.kit); state.pidx=null; };
+// on ne garde que les compos des trois derniers jours
+const saveLineups=()=>{
+  const lim=Date.now()-3*86400000, out={};
+  for(const [k,v] of Object.entries(state.lineups)) if(v&&v.at>lim) out[k]=v;
+  state.lineups=out; store.set('prono.lu',out);
+};
 const saveElo=()=>store.set(K.elo,state.elo);
 const saveEalias=()=>store.set(K.ealias,state.ealias);
 const savePreds=()=>store.set(K.preds,state.preds);
@@ -1535,6 +1599,9 @@ function ingestSquads(j){
   for(const t of (j.teams||[])){
     if(!t.name) continue;
     noteTeam(t);
+    const kc=kitFrom(t.clubColors); if(kc) state.kit[t.name]=kc;
+    if((t.squad||[]).length)
+      state.roster[t.name]=t.squad.filter(p=>p&&p.name).map(p=>({n:p.name,pos:posCode(p.position)}));
     for(const p of (t.squad||[])){
       if(!p||!p.id) continue;
       state.squad[p.id]=t.name; n++;
@@ -2343,7 +2410,8 @@ function renderList(){
 function setDtab(t){
   state.dtab=t;
   document.querySelectorAll('#dtabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
-  ['pr','fo','bu','po'].forEach(k=>$('tab-'+k).classList.toggle('hidden',k!==t));
+  ['pr','co','fo','bu','po'].forEach(k=>$('tab-'+k).classList.toggle('hidden',k!==t));
+  if(t==='co') loadCompo();
 }
 
 function openDetail(h,a,it,frozen){
@@ -2351,6 +2419,7 @@ function openDetail(h,a,it,frozen){
   state.sel={home:h,away:a,it:it||null,frozen:frozen||null,
              from:frozen?'history':'matches'};
   if(state.model){ $('home').value=h; $('away').value=a; }
+  state.compoSide='h'; state.compoMsg='';
   setDtab('pr');
   show('vDetail');
   renderDetail();
@@ -2398,6 +2467,13 @@ function scorerProbs(team,lam){
     return {n:x.n, g:x.g, m:x.m, pg:x.pg||0, pm:x.pm||0, venu:x.venu||null,
             corrige:!!x.corrige, viaSquad:!!x.viaSquad, rythme, lam:rythme*(lam/base)};
   }).filter(Boolean);
+  // compo officielle connue : titulaire plein, remplaçant un quart, absent zéro
+  const Lc=typeof lineupFor==='function'?lineupFor(team):null;
+  if(Lc){
+    const tit=new Set((Lc.startXI||[]).map(x=>cleJ(x.player&&x.player.name)));
+    const rem=new Set((Lc.substitutes||[]).map(x=>cleJ(x.player&&x.player.name)));
+    raw.forEach(x=>{ const c=cleJ(x.n); x.lam*=tit.has(c)?1:rem.has(c)?0.25:0; });
+  }
   // contrainte de cohérence : les buts des joueurs ne peuvent pas
   // dépasser les buts attendus de l'équipe
   const tot=raw.reduce((s,x)=>s+x.lam,0);
@@ -2406,6 +2482,186 @@ function scorerProbs(team,lam){
                       corrige:x.corrige, viaSquad:x.viaSquad, p:1-Math.exp(-x.lam*k)}))
             .filter(x=>x.p>=0.04);
 }
+
+/* ============================================================
+   COMPOSITIONS
+   Compo officielle via API-Football (environ 1 h avant le match),
+   sinon l'effectif par poste venu de football-data.org.
+   ============================================================ */
+const AF_IDS={CL:2,PL:39,PD:140,SA:135,BL1:78,FL1:61,PPL:94,DED:88,ELC:40,BSA:71};
+
+async function afGet(path){
+  let r;
+  try{ r=await fetch('/api/fd?af='+encodeURIComponent(path)); }
+  catch(_){ throw new Error('proxy /api/fd injoignable'); }
+  const txt=await r.text();
+  let j; try{ j=JSON.parse(txt); }catch(_){ throw new Error('réponse illisible (code '+r.status+')'); }
+  if(!r.ok) throw new Error(j.message||('code '+r.status));
+  // API-Football répond 200 avec un objet « errors » quand le plan bloque
+  const errs=j.errors?(Array.isArray(j.errors)?j.errors:Object.values(j.errors)):[];
+  if(errs.length) throw new Error(String(errs[0]));
+  return j;
+}
+
+// « M. Oyarzabal » et « Mikel Oyarzabal » : même nom de famille, même initiale
+const cleJ=n=>{
+  const t=norm(n).split(' ').filter(Boolean);
+  return t.length?t[t.length-1]+'|'+t[0][0]:'';
+};
+
+// couleurs officielles du club (« Red / White ») -> maillot
+const COUL={red:'#C8102E',white:'#F4F4F2',black:'#141414',blue:'#1F4FB8','navy blue':'#0B1F4B',
+  navy:'#0B1F4B','sky blue':'#6CABDD','light blue':'#8BC4FF','royal blue':'#1E3FA8',claret:'#7A1E3A',
+  yellow:'#F5D000',gold:'#C9A227',green:'#1E7A3C','dark green':'#0E4D2A',orange:'#F07E1A',
+  purple:'#5B2A86',violet:'#6B3FA0',maroon:'#6D1A2C',burgundy:'#7B1E2E',grey:'#8A8A8A',
+  gray:'#8A8A8A',silver:'#B8BCC4',amber:'#F5A524',pink:'#E88BB0',brown:'#6B4226',
+  cherry:'#9E1B32',azure:'#2A7FD4',garnet:'#7B1E2E'};
+function kitFrom(str){
+  const parts=String(str||'').toLowerCase().split(/\s*[\/&,]\s*|\s+and\s+/).map(s=>s.trim()).filter(Boolean);
+  const hx=parts.map(p=>COUL[p]||COUL[p.split(' ').slice(-1)[0]]).filter(Boolean);
+  if(!hx.length) return null;
+  const s=hx[1]&&hx[1]!==hx[0]?hx[1]:(hx[0]==='#F4F4F2'?'#141414':'#F4F4F2');
+  return {p:hx[0],s,n:s};
+}
+const posCode=p=>{
+  const s=String(p||'').toLowerCase();
+  if(s.includes('goal')) return 'G';
+  if(s.includes('back')||s.includes('defen')) return 'D';
+  if(s.includes('mid')) return 'M';
+  if(s.includes('off')||s.includes('forw')||s.includes('wing')||s.includes('strik')) return 'F';
+  return 'M';
+};
+
+const BALLE=`<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="#fff" stroke="#141414" stroke-width="1"/><path d="M8 4.3 L11.1 6.5 L9.9 10 L6.1 10 L4.9 6.5Z" fill="#141414"/></svg>`;
+
+function maillot(k,num,taille){
+  const p=k&&k.p||'#2A2A31', s=k&&k.s||'#F4F4F2', nc=k&&k.n||s;
+  return `<svg class="jer" viewBox="0 0 40 40" width="${taille}" height="${taille}" aria-hidden="true">
+    <path d="M13 4 L8 6 L2 13 L7 18 L10 15 L10 37 L30 37 L30 15 L33 18 L38 13 L32 6 L27 4 Q20 9 13 4 Z" fill="${p}" stroke="rgba(0,0,0,.5)" stroke-width="1"/>
+    <path d="M2 13 L8 6 L10 15 L7 18 Z M38 13 L32 6 L30 15 L33 18 Z" fill="${s}"/>
+    <path d="M13 4 Q20 9 27 4" fill="none" stroke="${s}" stroke-width="2"/>
+    <path d="M10 15 L10 37 L15 37 L15 12 Z" fill="rgba(0,0,0,.2)"/>
+    ${num!==''&&num!=null?`<text x="20" y="28" text-anchor="middle" font-size="11" font-weight="700" fill="${nc}" font-family="Archivo,sans-serif">${esc(num)}</text>`:''}
+  </svg>`;
+}
+
+function lineupFor(team){
+  const it=state.sel&&state.sel.it; if(!it) return null;
+  const lu=state.lineups[pkey(it)];
+  if(!lu||!lu.data||!lu.data.length) return null;
+  let best=null,bs=0;
+  for(const L of lu.data){ const s=pair(L.team.name,team).dice; if(s>bs){ bs=s; best=L; } }
+  return bs>=0.34?best:null;
+}
+
+async function loadCompo(force){
+  const it=state.sel&&state.sel.it;
+  if(!it){ renderCompo(); return; }
+  const k=pkey(it), now=Date.now(), lu=state.lineups[k];
+  const proche=it.t-now<90*60000;                         // 1 h 30 avant le match, ou après
+  const dejaLa=lu&&lu.data&&lu.data.length;
+  const recent=lu&&now-lu.at<10*60000;                     // on ne réinterroge pas avant 10 min
+  if(!proche||!AF_IDS[it.c]||dejaLa||(recent&&!force)){ renderCompo(); return; }
+  state.compoMsg='Recherche de la compo officielle…'; renderCompo();
+  try{
+    const d=new Date(it.t), saison=d.getUTCMonth()>=6?d.getUTCFullYear():d.getUTCFullYear()-1;
+    const dk=it.c+'|'+iso(it.t);
+    let fx=state.afDay[dk];
+    if(!fx){
+      const j=await afGet(`/fixtures?date=${iso(it.t)}&league=${AF_IDS[it.c]}&season=${saison}`);
+      fx=(j.response||[]).map(f=>({id:f.fixture.id,h:f.teams.home.name,a:f.teams.away.name}));
+      state.afDay[dk]=fx;
+    }
+    let best=null,bs=0;
+    for(const f of fx){ const s=pair(f.h,it.home).dice+pair(f.a,it.away).dice; if(s>bs){ bs=s; best=f; } }
+    if(!best||bs<0.5) throw new Error("match introuvable chez API-Football");
+    const j=await afGet(`/fixtures/lineups?fixture=${best.id}`);
+    state.lineups[k]={at:Date.now(),data:j.response||[]};
+  }catch(e){
+    state.lineups[k]={at:Date.now(),data:[],err:e.message};
+  }
+  saveLineups();
+  state.compoMsg='';
+  if(state.view==='vDetail') renderDetail();                // buteurs recalculés avec la compo
+}
+
+function renderCompo(){
+  const box=$('compo'); if(!box||!state.sel) return;
+  const it=state.sel.it, h=state.sel.home, a=state.sel.away;
+  const cote=state.compoSide||'h', team=cote==='h'?h:a;
+  const L=lineupFor(team);
+  const m=state.model, p=m?predictAny(m,h,a,false):null;
+  const sc=p?scorerProbs(team,cote==='h'?p.lh:p.la):[];
+  const chance=new Map(sc.map(x=>[cleJ(x.n),x.p]));
+  const bq=n=>{ const v=chance.get(cleJ(n)); return v?`<span class="bq">${BALLE}<sup>?</sup>${pctI(v)}%</span>`:''; };
+
+  const bascule=`<div class="cswitch">
+    <button class="${cote==='h'?'on':''}" data-s="h">${crest3d(h,24,0,1)}<span class="cn">${esc(shortName(h))}</span></button>
+    <button class="${cote==='a'?'on':''}" data-s="a">${crest3d(a,24,0,1)}<span class="cn">${esc(shortName(a))}</span></button>
+  </div>`;
+
+  const lu=it?state.lineups[pkey(it)]:null;
+  let etat;
+  if(L) etat=`<span class="cdot ok"></span>Compo officielle${L.formation?` · ${esc(L.formation)}`:''}`;
+  else if(state.compoMsg) etat=`<span class="cdot"></span>${esc(state.compoMsg)}`;
+  else if(lu&&lu.err) etat=`<span class="cdot ko"></span>Compo indisponible : ${esc(lu.err)}`;
+  else if(it&&it.t-Date.now()<90*60000) etat=`<span class="cdot"></span>Compo officielle pas encore publiée, nouvel essai dans quelques minutes`;
+  else etat=`<span class="cdot"></span>Compo officielle environ 1 h avant le coup d'envoi. En attendant, l'effectif`;
+
+  let corps;
+  if(L){
+    // placement selon la grille « ligne:colonne » fournie avec la compo
+    const xi=(L.startXI||[]).map(x=>x.player).filter(Boolean);
+    const lignes=Math.max(...xi.map(pl=>+String(pl.grid||'1:1').split(':')[0]),2);
+    const parLigne={};
+    xi.forEach(pl=>{ const r=+String(pl.grid||'1:1').split(':')[0]; parLigne[r]=(parLigne[r]||0)+1; });
+    const kc=L.team&&L.team.colors||{};
+    const kit=c=>c?{p:'#'+c.primary,s:'#'+(c.border||c.number),n:'#'+c.number}:null;
+    const kj=kit(kc.player)||state.kit[team], kg=kit(kc.goalkeeper)||kj;
+    const joueurs=xi.map((pl,i)=>{
+      const [r,c]=String(pl.grid||'1:1').split(':').map(Number);
+      const x=((c-0.5)/(parLigne[r]||1))*100;
+      const y=90-(r-1)*(76/(lignes-1));
+      const photo=pl.id?`<img src="https://media.api-sports.io/football/players/${pl.id}.png" alt="" loading="lazy" onerror="this.remove()">`:'';
+      return `<div class="pp" style="left:${x.toFixed(1)}%;top:${y.toFixed(1)}%;--d:${(i*45)}ms">
+        <div class="av">${maillot(r===1?kg:kj,pl.number,40)}${photo}</div>${bq(pl.name)}
+        <span class="pn"><b>${esc(pl.number??'')}</b> ${esc(pl.name)}</span></div>`;
+    }).join('');
+    const remp=(L.substitutes||[]).map(x=>x.player).filter(Boolean).map(pl=>
+      `<div class="sub">${maillot(kj,pl.number,22)}<span>${esc(pl.name)}</span>${bq(pl.name)}</div>`).join('');
+    corps=`<div class="cpw" id="cpw"><div class="cpitch">${TERRAIN_V}${joueurs}</div></div>
+      ${remp?`<div class="csubs"><div class="cst">Remplaçants</div>${remp}</div>`:''}`;
+  }else{
+    const ro=state.roster[team];
+    if(!ro||!ro.length){
+      corps=`<div class="cpw" id="cpw"><p class="note">Effectif pas encore chargé : lance « Tout recharger » dans Réglages.</p></div>`;
+    }else{
+      const kj=state.kit[team];
+      const grp=[['G','Gardiens'],['D','Défenseurs'],['M','Milieux'],['F','Attaquants']];
+      corps=`<div class="cpw" id="cpw">`+grp.map(([k,titre])=>{
+        const l=ro.filter(x=>x.pos===k).sort((x,y)=>(chance.get(cleJ(y.n))||0)-(chance.get(cleJ(x.n))||0)||x.n.localeCompare(y.n));
+        if(!l.length) return '';
+        return `<div class="cgrp"><div class="cst">${titre}</div>`+l.map((x,i)=>
+          `<div class="sub" style="--d:${i*30}ms">${maillot(kj,'',22)}<span>${esc(x.n)}</span>${bq(x.n)}</div>`).join('')+'</div>';
+      }).join('')+'</div>';
+    }
+  }
+
+  box.innerHTML=bascule+`<div class="cetat">${etat}</div>`+corps+
+    `<p class="note" style="margin-top:12px">${BALLE} Buteur probable, avec sa chance de marquer${L?' — recalculée avec la compo : un remplaçant compte pour un quart, un absent pour zéro':''}.</p>`;
+
+  box.querySelectorAll('.cswitch button').forEach(b=>b.onclick=()=>{
+    const s=b.dataset.s;
+    if(s===state.compoSide) return;
+    const w=$('cpw');
+    const reduit=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(!w||reduit){ state.compoSide=s; renderCompo(); return; }
+    w.classList.add('bascule-out');
+    setTimeout(()=>{ state.compoSide=s; renderCompo(); const w2=$('cpw'); if(w2) w2.classList.add('bascule-in'); },190);
+  });
+}
+
+const TERRAIN_V=`<svg class="clines" viewBox="0 0 68 100" preserveAspectRatio="none" aria-hidden="true"><g fill="none" stroke="rgba(244,244,242,.3)" stroke-width=".35"><rect x="2" y="2" width="64" height="96"/><line x1="2" y1="50" x2="66" y2="50"/><circle cx="34" cy="50" r="8"/><rect x="16" y="2" width="36" height="14"/><rect x="25" y="2" width="18" height="5"/><rect x="16" y="84" width="36" height="14"/><rect x="25" y="93" width="18" height="5"/><path d="M27 16 A8 8 0 0 0 41 16"/><path d="M27 84 A8 8 0 0 1 41 84"/></g></svg>`;
 
 function renderWhy(h,a,p){
   const m=state.model, ih=m.idx.get(h), ia=m.idx.get(a);
@@ -2603,6 +2859,7 @@ function renderDetail(){
     $('dhero').style.setProperty('--cl',u?`url("${String(u).replace(/"/g,'%22')}")`:'none');
     $('dhero').classList.toggle('wm-lum',!!(it&&FILIGRANE_CLAIR.has(it.c)));
   }
+  renderCompo();
   $('ch').innerHTML=crest3d(h,76,24,7);
   $('ca').innerHTML=crest3d(a,76,-24,7);
   $('nh').textContent=shortName(h); $('na').textContent=shortName(a);
